@@ -131,7 +131,8 @@ if (assembly == "hg19") {
         save(anno, file=annoFile)
     }else{
         anno <- get(load(annoFile))
-    }}
+    }
+}
 if (assembly == "mm9") {
     organism <- Mmusculus
 }
@@ -152,7 +153,7 @@ if (assembly == "sacCer3") {
         save(anno, file=annoFile)
     }else{
         anno <- get(load(annoFile))
-    }}
+    }
 }
 if (assembly == "dm3") {
     organism <- Dmelanogaster

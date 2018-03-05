@@ -76,12 +76,12 @@ mround <- function(x,base){
     base*ceiling(x/base) 
 } 
 
-if( max(df[,grep("x",names(df),invert=TRUE)]) > 0.5 ){
-    Ymax <- mround(ceiling(max(df[,grep("x",names(df),invert=TRUE)])),2)
+if( max(df[,grep("^x$",names(df),invert=TRUE)]) > 0.5 ){
+    Ymax <- mround(ceiling(max(df[,grep("^x$",names(df),invert=TRUE)])),2)
     Min <- 0
 }else{
-    Ymax <- mround(max(df[,grep("x",names(df),invert=TRUE)]),0.05)
-    Min <- mround(min(df[,grep("x",names(df),invert=TRUE)]),-0.05)
+    Ymax <- mround(max(df[,grep("^x$",names(df),invert=TRUE)]),0.05)
+    Min <- mround(min(df[,grep("^x$",names(df),invert=TRUE)]),-0.05)
 }
 
 if (identical(Height, character(0))){
@@ -101,6 +101,7 @@ if (identical(cols,character(0))){
 pdf(file=sub("$", paste0(Type, ".metaPlot.pdf"), outName),width=8,height=5)
 print({
     p <-
+
     ggplot(df.long, aes(x=x, y=value, color=variable)) +
     geom_line(size=1.5)+
     scale_color_manual("sample", values = Cols )+
@@ -129,5 +130,6 @@ print({
           axis.text.x = element_text(vjust=1,color="black",size=12),
           axis.text.y = element_text(color="black",size=12),
           plot.title=element_text(size=12))
+
 })
 dev.off()

@@ -1,8 +1,9 @@
 args <- commandArgs()
 
 help <- function(){
-    cat("ChIP_heatmapMatrix.R :
-- From a provided GRnages obnject make binned heatmap matrix of defined windows around peaks, tss, or tes.
+    cat("ChIP_binaryHeatmapMatrix.R :
+- From a provided GRnages object make a binary heatmap matrix of defined windows around peaks, tss, or tes.
+- Unlike ChIP_heatmapMatrix.R that uses coverage, this script gives a 1 or a zero for the presence of a peak.
 - For smaller windows 5-10kb, I recommend binning in 25bp. For larger windows, I recommend 50bp bins. 
 - Window is an option if type is Peaks, and upStream and downStream are exclusive to type either Tss or Tes.\n")
  
@@ -14,7 +15,7 @@ help <- function(){
     cat("--downStream  : distance downstream of the region to take (use for Tss and Tes)[default = 2.5kb]\n")
     cat("--bins        : number to bin coverage the window should be divisable by this  [default = 25bp]\n")
     cat("--assembly    : genome assembly build (ex. hg19, dm3)                          [default = hg19]\n")    
-    cat("--bwFile      : path to bigWig File                                            [required]\n")
+    cat("--bedFile     : path to peaks bed File                                         [required]\n")
     cat("--numCores    : number of cores to use                                         [default = 10 ]\n")
     cat("--outName     : prefix to your out file names (No .extention)                  [default = basename(bigWigFile) ]\n")
     cat("\n")
@@ -25,28 +26,28 @@ help <- function(){
 if(length(args)==0 || !is.na(charmatch("-help",args))){
     help()
 } else {
-    regions   <- sub( '--regions=', '', args[grep('--regions=', args)] )
-    Type      <- sub( '--type=', '', args[grep('--type=', args)] )
-    Window    <- sub( '--window=', '', args[grep('--window=', args)] )
+    regions    <- sub( '--regions=', '', args[grep('--regions=', args)] )
+    Type       <- sub( '--type=', '', args[grep('--type=', args)] )
+    Window     <- sub( '--window=', '', args[grep('--window=', args)] )
     upStream   <- sub( '--upStream=', '', args[grep('--upStream=', args)] )
     downStream <- sub( '--downStream=', '', args[grep('--downStream=', args)] )
-    Bins      <- sub( '--bins=', '', args[grep('--bins=', args)] )
-    assembly  <- sub( '--assembly=', '', args[grep('--assembly=', args)] )
-    bwFile    <- sub( '--bwFile=', '', args[grep('--bwFile=', args)])
-    Cores     <- sub( '--numCores=', '',args[grep('--numCores=',args)])
-    outName   <- sub( '--outName=', '',args[grep('--outName=',args)])
+    Bins       <- sub( '--bins=', '', args[grep('--bins=', args)] )
+    assembly   <- sub( '--assembly=', '', args[grep('--assembly=', args)] )
+    bedFile    <- sub( '--bedFile=', '', args[grep('--bedFile=', args)])
+    Cores      <- sub( '--numCores=', '',args[grep('--numCores=',args)])
+    outName    <- sub( '--outName=', '',args[grep('--outName=',args)])
 
 }
 
 #setwd("/projects/b1025/arw/analysis/kevin/SEC/")
-#regions  <- "tables/Pol2_293T_DMSO_817_rep1.filteredProteinCodingTx.rda"
+#regions  <- "/projects/b1025/arw/analysis/kevin/SEC/data_chipseq/MYC_H2171_1021.macsPeaks.bed"
+#bedFile  <- "/projects/b1025/arw/analysis/kevin/SEC/data_chipseq/AFF4_H2171_1021.macsPeaks.bed"
 #assembly <- "hg19"
-#Window   <- 4000
+#Window <- 2000
 #Bins     <- 25
-#Type     <- "Tss"
-#bwFile <- "data_chipseq/PolII_468_293T_817_rep1.bw"
+#Type     <- "Peaks"
 #Cores <- 10
-#outName <-paste("tables/heatmaps", sub(".bw", "", basename(bwFile)), sep="/")
+#outName <-paste("tables/heatmaps/MYC_H2171", sub(".macsPeaks.bed", "", basename(bedFile)), sep="/")
     
 if (identical(Cores,character(0))){
    Cores <- 10
@@ -59,7 +60,7 @@ if (identical(assembly,character(0))){
 }
 
 if (identical(outName,character(0))){
-   outName <- sub(".bw", "", basename(bwFile))
+   outName <- sub(".bed", "", basename(bedFile))
 }
 
 if (Type == "Peaks" ){
@@ -159,44 +160,28 @@ if( Type=="Tss" ){
     fname <- sub("$", paste0("_", Type, Window, ".rda"), outName)
 }
 
-matBin <- function(bw, model){
-    
-    cat("importing:", bw, sep="\n")
-    bw.peak <- import.bw(bw,RangedData=FALSE,selection = BigWigSelection(model))
+matBin <- function(BED,model,name){
+    cat("importing:", BED, sep="\n")
+    bed             <- import.bed(BED)
+    seqinfo(bed)    <- seqinfo(Hsapiens)[seqlevels(bed)]
     cat("calc coverage\n")
-    bw.peak.cov <- coverage(bw.peak,weight='score')
-    seqlengths(bw.peak.cov) <- seqlengths(organism)[seqlevels(bw.peak.cov)]
+    bd.cov          <- coverage(bed)
+    seqinfo(bd.cov) <- seqinfo(Hsapiens)[seqlevels(bd.cov)]
     cat("get coverage for peak region\n")
-    cov <- with(as.data.frame(model),{
-        mcmapply(function(seqname,start,end,strand){
-            r <- bw.peak.cov[[seqname]][start:end]
-            if(strand == '-'){r <- rev(r)}
-            return(r)
+    cov             <- with(as.data.frame(model),{
+        mcmapply(function(seqname,start,end){
+            r <- bd.cov[[seqname]][start:end]
+            r[seq(1,length(r),by=Bins)]
         }
        ,mc.cores=Cores
-       ,as.character(seqnames),start,end,as.character(strand))
-    })
+       ,as.character(seqnames),start,end
+        )})  
     cat("convert list to matrix\n")
-    mat <- do.call(rbind, mclapply(cov, as.numeric,mc.cores=Cores))
-    x <- mat
-    cov <- data.frame(x)
-    cat("bin the matrix\n")
-
-    window.cov <- function(row){
-        window <- as.integer(ncol(cov)/Bins)
-        window.coverage <- lapply(0:(window-1), function(jump)
-            rowMeans(row[as.numeric(jump*Bins+1):as.numeric((jump*Bins)+Bins)])
-            )
-        t(as.matrix(unlist(window.coverage)))
-    }
-    win <- mclapply(1:nrow(cov), function(i)
-        window.cov(cov[i,]),mc.cores=Cores)    
-    bin.mat <- do.call(rbind, mclapply(win, as.numeric, mc.cores=Cores))
-
-    df <- data.frame(bin.mat)
-    rownames(df) <- model$name
+    mat             <- do.call(rbind, mclapply(cov, as.numeric,mc.cores=Cores))
+    df              <- data.frame(mat)
+    rownames(df)    <- model$name
     save(df,file=fname)
     print("done")
 }
 
-matBin(bw=bwFile, model=Model.win)
+matBin(BED=bedFile, model=Model.win)

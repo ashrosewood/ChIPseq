@@ -46,7 +46,7 @@ library(ggplot2)
 ###############################
 
 df           <- read.delim(tab)
-rownames(df) <- paste(df$tx_name)
+rownames(df) <- paste(df$gene_id)
 dim(df)
 
 Tss          <- df[ , grep("tss$", names(df)) ]
@@ -127,8 +127,8 @@ if(PRR==0){
                   plot.title=element_text(size=12))
     })
     dev.off()
-    Pi$gene_id <- rownames(Pi)
-    write.table(Pi, sub("$", ".PI.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
+    PI$gene_id <- rownames(PI)
+    write.table(PI, sub("$", ".PI.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
 }else{
     df.long <- melt(Prr[ is.finite(rowSums(Prr)), ] )
     if (identical(Xmax,character(0))){
