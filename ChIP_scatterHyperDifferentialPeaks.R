@@ -146,11 +146,12 @@ scatterPlots <- function(dataTable){
     points(df[up,"rpkm.avg"], df[up,"log2FC"], col=upCol, pch=19,cex=1)
     points(df[down,"rpkm.avg"], df[down,"log2FC"], col=downCol, pch=19,cex=1)
     ## total dge with cutoffs
-    legend("bottomright", c(paste(sum(up), "FC >=", FC)
-                            ,paste(sum(down), "FC <=", FC)
-                           ,paste(nrow(df)-sum(up)-sum(down), "no change")
+    legend("topleft", title=paste("FC:", FC, "adjp:", adjp)
+          ,c(paste(sum(up))
+            ,paste(sum(down))
+            ,paste(nrow(df)-sum(up)-sum(down))
                             ),
-           pch=c(19,19,19), col=c(upCol,downCol,ncCol),cex=0.8,title=paste("adjp < ",adjp))
+           pch=c(19,19,19), col=c(upCol,downCol,ncCol),cex=0.8)
     abline(h=0, lty=2, col="grey70")
     dev.off()    
 }

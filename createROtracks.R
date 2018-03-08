@@ -11,6 +11,7 @@ help <- function(){
     cat("--flipStrand : If the strand should be flipped. Depends where the primer is. [default = 1]\n")
     cat("               (typicllay GROseq no ;PROseq yes) (0/1)                        \n")
     cat("--extLen     : number of bases to extend the reads to                        [default = 0]\n")
+    cat("--noStrand   : replace strand with * (ChIP-seq) (0/1)                             [default = 0]\n")
     cat("\n")
     q()
 }
@@ -25,6 +26,7 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     sepStrands  <- sub('--sepStrands=', '', args[grep('--sepStrands=', args)])
     flipStrand  <- sub('--flipStrand=', '', args[grep('--flipStrand=', args)])
     extLen      <- sub('--extLen=', '', args[grep('--extLen=', args)])
+    noStrand    <- sub('--noStrand=', '', args[grep('--noStrand=', args)])
 }
 
 print(bamFile)
@@ -89,6 +91,10 @@ bam2bw <- function(BF,organism){
         strand(bd) <- ifelse(strand(bd) == '+', '-', '+')
     }
 
+    if( noStrand > 0 ){
+        strand(bd) <- '*'
+    }
+    
     cat("convert to GRanges\n")
     mygr <- as(bd,"GRanges")
     if (extLen > 0){

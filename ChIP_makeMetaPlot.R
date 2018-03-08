@@ -33,6 +33,14 @@ library(viridis)
 library(reshape2)
 library(ggplot2)
 
+#setwd("/projects/b1025/arw/analysis/kevin/SEC/")
+#Dir="tables/heatmaps/MYC_H2171_1021"
+#Pattern="H2171_1021.*_Peaks5000.binary"
+#outName="plots/meta_plots/H2171_1021_Peaks5000binary"
+#cols="plots/plotColors/1021_colors.txt"
+#bins=25
+#Type="Peaks"
+
 ## set defaults
 if (identical(bins,character(0))){
    bins <- 25
@@ -45,6 +53,7 @@ if (identical(Type,character(0))){
 }
 
 Dir
+Pattern
 foo <- list.files(Dir, pattern=".rda", full.names=TRUE)
 foo <- foo[grep(Pattern,foo,invert=FALSE)]
 foo <- foo[grep(Type,foo,invert=FALSE)]
@@ -71,6 +80,8 @@ df <- do.call(cbind, lapply(SAMPLES, function(x){
 ))
 df$x <- seq(1,nrow(df))
 df.long <- melt(df, id.vars = "x")
+
+head(df)
 
 mround <- function(x,base){ 
     base*ceiling(x/base) 

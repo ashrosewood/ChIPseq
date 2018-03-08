@@ -11,7 +11,9 @@ help <- function(){
     cat("--upStream   : number of bp upstream of Tss in matrix                          [required]\n")
     cat("--downStream : number of bp downstream of Tss in matrix                        [required]\n")
     cat("--Height     : plot height if you do not want to be set the max                [default = max of colMeans]\n")
-    cat("--Control    : name of control sample; if set makes a FC plot over this sample [default = max of colMeans]\n")
+    cat("--Control    : name of control to compare all samples to                       [default = max of colMeans]
+                         if set makes a FC plot over this sample.\n")
+    cat("--GeneList   : text file gene ids (rownames) to subsample by                   [default = none]\n")
     cat("\n")
     q()
 }
@@ -28,6 +30,7 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     downStream <- sub( '--downStream=', '',args[grep('--downStream=',args)])
     Height     <- sub( '--Height=', '',args[grep('--Height=',args)])
     Control    <- sub( '--Control=', '',args[grep('--Control=',args)])
+    GeneList   <- sub( '--GeneList=', '',args[grep('--GeneList=',args)])
 }
 
 if (identical(Control, character(0))){
@@ -46,6 +49,12 @@ foo <- list.files(Dir, pattern=".rda", full.names=TRUE)
 foo <- foo[grep(Pattern,foo,invert=FALSE)]
 foo
 
+if (exists("GeneList")){
+    print(paste("Filter for genes in:", GeneList))
+    genes <- read.table(GeneList, sep="\t", header=FALSE)
+}
+
+
 ## load files and assign to file name
 for (i in 1:length(foo))
 {
@@ -53,6 +62,10 @@ for (i in 1:length(foo))
     oname <- gsub("-","_",oname)
     df <- get(load(foo[i]))
     colnames(df) <- paste(sub(".df", "", oname), 1:ncol(df), sep=".")
+    if (exists("GeneList")){
+        print(paste("Filter for genes in:", GeneList, foo[i]))
+        df <- df[rownames(df) %in% paste(genes[,1]),]
+    }
     assign(oname, df)
 }
 
@@ -95,6 +108,7 @@ if (identical(cols,character(0))){
     Cols             <- paste(df.col[sub(".df", "", SAMPLES), "color"])
 }
 
+
 pdf(file=sub("$", ".metaGenePlot.pdf", outName),width=8,height=5)
 print({
     p <-
@@ -128,6 +142,7 @@ print({
           axis.text.x = element_text(vjust=1,color="black",size=12),
           axis.text.y = element_text(color="black",size=12),
           plot.title=element_text(size=12))
+
 })
 dev.off()
 

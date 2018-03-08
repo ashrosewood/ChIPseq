@@ -8,7 +8,7 @@ help <- function(){
     cat("--Control    : Path to control bam file                                 [required]\n")
     cat("--Experiment : Path to experiment bam file                              [required]\n")
     cat("--assembly   : genome (hg19, mm9, mm10, dm3, sacCer3)                   [hg19]\n")
-    cat("--PeakFile   : Path to peaks to evaluate (must have a name in column 4) [required]\n")
+    cat("--PeakFile   : Path to peaks (rda or bed) must have a name in column    [required]\n")
     cat("--outName    : Path to output file (no file extension ie .txt)          [required]\n")
     cat("\n")
     q()
@@ -77,8 +77,14 @@ if (assembly == "dm3") {
 
 param           <- ScanBamParam(what='mapq')
 
-peaks           <- import(PeakFile)
-seqinfo(peaks)  <- seqinfo(organism)[seqlevels(peaks)]
+if( length(grep(".bed$", PeakFile)) > 0 ){
+    peaks           <- import(PeakFile)
+    seqinfo(peaks)  <- seqinfo(organism)[seqlevels(peaks)]
+}else{
+    peaks           <- get(load(PeakFile))
+    seqinfo(peaks)  <- seqinfo(organism)[seqlevels(peaks)]
+    peaks
+}
 
 hyperTable <- function(Control,Experiment){
     ##-------------read in control and experiment bam files-----------##

@@ -40,10 +40,10 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
 }
 
 #setwd("/projects/b1025/arw/analysis/kevin/SEC/")
-#regions  <- "/projects/b1025/arw/analysis/kevin/SEC/data_chipseq/MYC_H2171_1021.macsPeaks.bed"
-#bedFile  <- "/projects/b1025/arw/analysis/kevin/SEC/data_chipseq/AFF4_H2171_1021.macsPeaks.bed"
+#regions  <- "/projects/b1025/arw/analysis/kevin/SEC/tables/MYC_H2171_1021_nonTss.rda"
+#bedFile  <- "/projects/b1025/arw/analysis/kevin/SEC/data_chipseq/AFF1_SW1271_1021.macsPeaks.bed"
 #assembly <- "hg19"
-#Window <- 2000
+#Window <- 5000
 #Bins     <- 25
 #Type     <- "Peaks"
 #Cores <- 10
@@ -147,23 +147,26 @@ if( Type=="Tss" ){
     print("model is Tss")
     Model.win      <- promoters(Model, upstream=upStream, downstream=downStream)
     Model.win$name <- Model.win$gene_id
-    fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".binary.rda"), outName)
 }else if( Type=="Tes" ){
     print("model is Tes")
     tes            <- resize(Model, width=1, fix="end")
     Model.win      <- promoters(tes, upstream=upStream, downstream=downStream)
     Model.win$name <- Model.win$gene_id
-    fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".binary.rda"), outName)
 }else if( Type=="Peaks" ){
     print("model is Peaks")
     Model.win      <- resize(Model, width=Window, fix="center")
-    fname <- sub("$", paste0("_", Type, Window, ".rda"), outName)
+    fname <- sub("$", paste0("_", Type, Window, ".binary.rda"), outName)
 }
 
 matBin <- function(BED,model,name){
     cat("importing:", BED, sep="\n")
-    bed             <- import.bed(BED)
-    seqinfo(bed)    <- seqinfo(Hsapiens)[seqlevels(bed)]
+    bed                       <- import.bed(BED)
+    seqinfo(bed)              <- seqinfo(Hsapiens)[seqlevels(bed)]
+    # must have the same chromosomes as the model!
+    #seqlevels(bed,force=TRUE)   <- seqlevels(bed)[grep("chrY|chrM",seqlevels(bed), invert=TRUE)]
+    #seqlevels(model,force=TRUE) <- seqlevels(model)[grep("chrY|chrM",seqlevels(model), invert=TRUE)]
     cat("calc coverage\n")
     bd.cov          <- coverage(bed)
     seqinfo(bd.cov) <- seqinfo(Hsapiens)[seqlevels(bd.cov)]
@@ -175,7 +178,7 @@ matBin <- function(BED,model,name){
         }
        ,mc.cores=Cores
        ,as.character(seqnames),start,end
-        )})  
+        )})
     cat("convert list to matrix\n")
     mat             <- do.call(rbind, mclapply(cov, as.numeric,mc.cores=Cores))
     df              <- data.frame(mat)
