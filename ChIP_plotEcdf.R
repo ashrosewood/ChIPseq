@@ -155,7 +155,7 @@ if(PRR==0){
             names(p.df) <- paste0(exps[i], "_pval")
             p.df
         }))
-        write.table(PI, sub("$", ".PI.pvalues.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
+        write.table(pvals.df, sub("$", ".PI.pvalues.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
     }
     PI$gene_id <- rownames(PI)
     write.table(PI, sub("$", ".PI.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
@@ -202,7 +202,7 @@ if(PRR==0){
             names(p.df) <- paste0(exps[i], "_pval")
             p.df
         }))
-        write.table(Prr, sub("$", ".PRR.pvalues.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
+        write.table(pvals.df, sub("$", ".PRR.pvalues.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
     }
     dev.off()
     Prr$gene_id <- rownames(Prr)
