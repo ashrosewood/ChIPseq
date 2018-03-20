@@ -139,8 +139,8 @@ scatterPlots <- function(dataTable){
          # ,xlim=c(MINs, MAXs)
          # ,ylim=c(MINs, MAXs)
           ,main=gsub("_rep[0-9]|_Rep[0-9]", "",gsub(".all", "", paste(Exp, Con, sep="\nvs\n")))
-          ,ylab=paste0("log2(", sub(".all", "", Exp), ")") 
-          ,xlab=paste0("log2(", sub(".all", "", Con), ")") 
+          ,ylab=paste0("log2( FC )") 
+          ,xlab=paste0("log2( avg RPKM )") 
         ,cex.lab=1, cex.axis=1.1, cex.main=1, cex.sub=1)
     ## highlight dge
     points(df[up,"rpkm.avg"], df[up,"log2FC"], col=upCol, pch=19,cex=1)
