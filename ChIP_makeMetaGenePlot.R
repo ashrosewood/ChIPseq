@@ -49,10 +49,10 @@ foo <- list.files(Dir, pattern=".rda", full.names=TRUE)
 foo <- foo[grep(Pattern,foo,invert=FALSE)]
 foo
 
-if (exists("GeneList")){
-    print(paste("Filter for genes in:", GeneList))
-    genes <- read.table(GeneList, sep="\t", header=FALSE)
-}
+#if ( !identical(GeneList, character(0)) ){
+#    print(paste("Filter for genes in:", GeneList))
+#    genes <- read.table(GeneList, sep="\t", header=FALSE)
+#}
 
 
 ## load files and assign to file name
@@ -62,10 +62,10 @@ for (i in 1:length(foo))
     oname <- gsub("-","_",oname)
     df <- get(load(foo[i]))
     colnames(df) <- paste(sub(".df", "", oname), 1:ncol(df), sep=".")
-    if (exists("GeneList")){
-        print(paste("Filter for genes in:", GeneList, foo[i]))
-        df <- df[rownames(df) %in% paste(genes[,1]),]
-    }
+ #   if (exists("GeneList")){
+ #       print(paste("Filter for genes in:", GeneList, foo[i]))
+ #       df <- df[rownames(df) %in% paste(genes[,1]),]
+ #   }
     assign(oname, df)
 }
 
@@ -113,7 +113,7 @@ pdf(file=sub("$", ".metaGenePlot.pdf", outName),width=8,height=5)
 print({
     p <-
     ggplot(df.long, aes(x=x, y=value, color=variable)) +
-    geom_line(size=1)+
+    geom_line(size=0.8)+
     scale_color_manual("sample", values = Cols )+
     scale_x_continuous(breaks=c(0
                                ,100

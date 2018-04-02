@@ -43,7 +43,7 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
 #assembly <- "hg19"
 #Window   <- 4000
 #Bins     <- 25
-#Type     <- "Tss"
+#Type     <- "Tes"
 #bwFile <- "data_chipseq/PolII_468_293T_817_rep1.bw"
 #Cores <- 10
 #outName <-paste("tables/heatmaps", sub(".bw", "", basename(bwFile)), sep="/")

@@ -185,15 +185,26 @@ gnModel          <- unlist(gnModel)## Gets the genomic region convered by transc
 seqinfo(gnModel) <- seqinfo(organism)[seqlevels(gnModel)]
 
 ## add gene info to gnModel
-gnModel$gene_id            <- names(gnModel)
-iv                         <- match(gnModel$tx_name, anno$ensembl_transcript_id)
-gnModel$external_gene_name <- anno[iv, "external_gene_name"]
-gnModel$gene_biotype       <- anno[iv, "gene_biotype"]
-gnModel$tx_biotype         <- anno[iv, "transcript_biotype"]
-gnModel$refseq_mrna        <- anno[iv, "refseq_mrna"]
-
-## filter for only protein coding with refseq mrna id
-gnModel <- gnModel[!is.na(gnModel$refseq_mrna) & gnModel$tx_biotype=="protein_coding" & gnModel$gene_biotype=="protein_coding"]
+if(assembly=="sacCer3"){
+    gnModel$gene_id            <- names(gnModel)
+    iv                         <- match(gnModel$tx_name, anno$ensembl_transcript_id)
+    gnModel$external_gene_name <- anno[iv, "external_gene_name"]
+    gnModel[gnModel$external_gene_name==""]$external_gene_name <- NA
+    gnModel$gene_biotype       <- anno[iv, "gene_biotype"]
+    gnModel$tx_biotype         <- anno[iv, "transcript_biotype"]
+    ## filter for protein coding genes
+    gnModel                    <- gnModel[gnModel$tx_biotype=="protein_coding" & gnModel$gene_biotype=="protein_coding"]
+}else{
+    gnModel$gene_id            <- names(gnModel)
+    iv                         <- match(gnModel$tx_name, anno$ensembl_transcript_id)
+    gnModel$external_gene_name <- anno[iv, "external_gene_name"]
+    gnModel[gnModel$external_gene_name==""]$external_gene_name <- NA
+    gnModel$gene_biotype       <- anno[iv, "gene_biotype"]
+    gnModel$tx_biotype         <- anno[iv, "transcript_biotype"]
+    gnModel$refseq_mrna        <- anno[iv, "refseq_mrna"]
+    ## filter for only protein coding with refseq mrna id
+    gnModel                    <- gnModel[!is.na(gnModel$refseq_mrna) & gnModel$tx_biotype=="protein_coding" & gnModel$gene_biotype=="protein_coding"]
+}
 
 ###########################################
 ## pick the mosth highly occupied transcript tss

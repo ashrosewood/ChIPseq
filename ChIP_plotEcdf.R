@@ -127,7 +127,7 @@ if(PRR==0){
     pdf(file=sub("$", ".pdf", outName),width=8,height=5)
     print({
         p <-ggplot(df.long, aes(x=value, colour=variable)) +
-            stat_ecdf(size=1.5) +
+            stat_ecdf(size=1.1) +
             scale_color_manual("sample", values = Cols )+
             ylab("fraction")+
             xlab("log2(pausing index)")+
@@ -175,7 +175,7 @@ if(PRR==0){
     print({
         p <-
             ggplot(df.long, aes(x=value, colour=variable)) +
-            stat_ecdf(size=1.5) +
+            stat_ecdf(size=1.1) +
             scale_color_manual("sample", values = Cols )+
             ylab("fraction")+
             xlab("log2(PRR)")+
