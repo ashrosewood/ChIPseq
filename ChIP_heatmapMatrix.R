@@ -147,20 +147,32 @@ if( Type=="Tss" ){
     Model.win      <- promoters(Model, upstream=upStream, downstream=downStream)
     Model.win$name <- Model.win$gene_id
     fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    if(length(idx) > 0){
+        print(paste("remove out of bounds", idx))
+        Model.win <- Model.win[-idx]
+    }
 }else if( Type=="Tes" ){
     print("model is Tes")
     tes            <- resize(Model, width=1, fix="end")
     Model.win      <- promoters(tes, upstream=upStream, downstream=downStream)
     Model.win$name <- Model.win$gene_id
     fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    if(length(idx) > 0){
+        print(paste("remove out of bounds", idx))
+        Model.win <- Model.win[-idx]
+    }
 }else if( Type=="Peaks" ){
     print("model is Peaks")
     Model.win      <- resize(Model, width=Window, fix="center")
     fname <- sub("$", paste0("_", Type, Window, ".rda"), outName)
+    idx <- GenomicRanges:::get_out_of_bound_index(Model.win)
+    if(length(idx) > 0){
+        print(paste("remove out of bounds", idx))
+        Model.win <- Model.win[-idx]
+    }
 }
 
 matBin <- function(bw, model){
-    
     cat("importing:", bw, sep="\n")
     bw.peak <- import.bw(bw,RangedData=FALSE,selection = BigWigSelection(model))
     cat("calc coverage\n")
@@ -181,7 +193,6 @@ matBin <- function(bw, model){
     x <- mat
     cov <- data.frame(x)
     cat("bin the matrix\n")
-
     window.cov <- function(row){
         window <- as.integer(ncol(cov)/Bins)
         window.coverage <- lapply(0:(window-1), function(jump)
@@ -192,7 +203,6 @@ matBin <- function(bw, model){
     win <- mclapply(1:nrow(cov), function(i)
         window.cov(cov[i,]),mc.cores=Cores)    
     bin.mat <- do.call(rbind, mclapply(win, as.numeric, mc.cores=Cores))
-
     df <- data.frame(bin.mat)
     rownames(df) <- model$name
     save(df,file=fname)
