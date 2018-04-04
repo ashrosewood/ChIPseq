@@ -102,7 +102,7 @@ if (identical(Height, character(0))){
 }
 
 if (identical(cols,character(0))){
-    Cols <- viridis(length(foo))
+    Cols <- rainbow(length(foo))#viridis(length(foo))
 }else{
     df.col           <- read.table(cols,sep="\t", header=TRUE,  comment.char = "")
     rownames(df.col) <- paste(df.col$sample)
