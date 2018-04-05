@@ -16,7 +16,7 @@ help <- function(){
     cat("--bwFiles     : path to bigWig Files                                           [required]\n")
     cat("--bwPattern   : grep pattern for bigWigs to use quotes (ex. PolII.*293T)       [default = all .bw in path]\n")    
     cat("--numCores    : number of cores to use                                         [default = 10 ]\n")
-    cat("--outName     : prefix to your out file names (No .extention)                  [default = basename(bigWigFile) ]\n")
+    cat("--outName     : prefix to your out file names (No .extention)                  [required]\n")
     cat("--cols        : need the same number as samples separated by comma             [default = rainbow]\n")
     cat("\n")
     q()
@@ -45,7 +45,9 @@ bwFiles
 
 bws <- list.files(bwFiles,pattern=".bw", full.names=TRUE)
 ## if no pattern it will keep them all
-bws <- bws[grep(bwPattern,bws,invert=FALSE)]
+if (! identical(bwPattern,character(0))){
+    bws <- bws[grep(bwPattern,bws,invert=FALSE)]
+}
 bws
 
 #setwd("/projects/b1025/arw/analysis/yohhei/quiescent/")
@@ -55,7 +57,6 @@ bws
 #Bins     <- 25
 #Type     <- "Peaks"
 #bwFiles <- "data_chipseq/"
-#bwPattern <- "BY4741A_Qui120hr_8WG16_rep1|set1del_Cps60TAP_Qui120hr_8WG16_rep1|set2del_Qui120hr_8WG16_rep1|set1del_Qui120hr_8WG16_rep1|rad6del_Qui120hr_8WG16_rep1|bre1del_Qui120hr_8WG16_rep1|dot1del_Qui120hr_8WG16_rep1|upb8ubp10del_Qui120hr_8WG16_rep1|Rpb3_3xFLAG_8WG16_120h_Qui_rep1|Rpb3_3xFLAG_8WG16_120h_Qui_rep2"
 #Cores <- 10
 #outName <-"debug"
     
@@ -67,10 +68,6 @@ if (identical(Cores,character(0))){
 
 if (identical(assembly,character(0))){
    assembly <- "hg19"
-}
-
-if (identical(outName,character(0))){
-   outName <- sub(".bw", "", basename(bwFile))
 }
 
 if (Type == "Peaks" ){
