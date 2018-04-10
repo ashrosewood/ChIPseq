@@ -2,9 +2,7 @@ args <- commandArgs()
 
 help <- function(){
     cat("ChIP_genomicDistribution.R :
-- From a provided GRnages object or peaks calculate the 
-- Window is an option if you would like to resize the regions, and the regions are peaks.
-- If the regions are Tss or Tes, use upstream and downstream options.\n")
+- From a provided summits bed file calculate the percent of peaks that fall in different genomic elements.\n")
  
     cat("Usage: \n")
     cat("--regions     : Summits bed file where the start and end are the summit position [required]\n")

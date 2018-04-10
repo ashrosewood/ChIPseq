@@ -38,13 +38,15 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
 
 }
 
-#setwd("/projects/b1025/arw/analysis/kevin/SEC/")
-#regions  <- "tables/Pol2_293T_DMSO_817_rep1.filteredProteinCodingTx.rda"
+#setwd("/projects/b1025/arw/analysis/delphine/termination_crispr")
+#regions  <- "tables/Pol2_CT_2Mio_HCT116_1087.filteredProteinCodingTx.rda"
 #assembly <- "hg19"
+#upStream <- 7500
+#downStream <- 7500
 #Window   <- 4000
-#Bins     <- 25
+#Bins     <- 50
 #Type     <- "Tes"
-#bwFile <- "data_chipseq/PolII_468_293T_817_rep1.bw"
+#bwFile <- "data_chipseq/Pol2_CT_2Mio_HCT116_1087.bw"
 #Cores <- 10
 #outName <-paste("tables/heatmaps", sub(".bw", "", basename(bwFile)), sep="/")
     
@@ -146,29 +148,31 @@ if( Type=="Tss" ){
     print("model is Tss")
     Model.win      <- promoters(Model, upstream=upStream, downstream=downStream)
     Model.win$name <- Model.win$gene_id
-    fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    fname          <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    idx            <- GenomicRanges:::get_out_of_bound_index(Model.win)
     if(length(idx) > 0){
-        print(paste("remove out of bounds", idx))
-        Model.win <- Model.win[-idx]
+        print( paste("remove out of bounds", idx) )
+        Model.win  <- Model.win[-idx]
     }
 }else if( Type=="Tes" ){
     print("model is Tes")
     tes            <- resize(Model, width=1, fix="end")
     Model.win      <- promoters(tes, upstream=upStream, downstream=downStream)
     Model.win$name <- Model.win$gene_id
-    fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    fname          <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    idx            <- GenomicRanges:::get_out_of_bound_index(Model.win)
     if(length(idx) > 0){
-        print(paste("remove out of bounds", idx))
-        Model.win <- Model.win[-idx]
+        print( paste("remove out of bounds", idx) )
+        Model.win  <- Model.win[-idx]
     }
 }else if( Type=="Peaks" ){
     print("model is Peaks")
     Model.win      <- resize(Model, width=Window, fix="center")
-    fname <- sub("$", paste0("_", Type, Window, ".rda"), outName)
-    idx <- GenomicRanges:::get_out_of_bound_index(Model.win)
+    fname          <- sub("$", paste0("_", Type, Window, ".rda"), outName)
+    idx            <- GenomicRanges:::get_out_of_bound_index(Model.win)
     if(length(idx) > 0){
-        print(paste("remove out of bounds", idx))
-        Model.win <- Model.win[-idx]
+        print( paste("remove out of bounds", idx) )
+        Model.win  <- Model.win[-idx]
     }
 }
 

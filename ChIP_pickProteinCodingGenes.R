@@ -42,14 +42,14 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
 }
 
 #txdbFile         <- "/projects/p20742/anno/Txdb/hsapiens_gene_ensembl_Ens75.txdb"
-#bwFile           <- "/projects/b1025/tango/TANGO-817/TANGO-817/tracks/293-DMSO-PolIIrep1.bw"
-#peakFile         <- "/projects/b1025/tango/TANGO-817/TANGO-817/peaks/293-DMSO-PolIIrep1.macsPeaks.bed" 
+#bwFile           <- "/projects/b1025/arw/analysis/delphine/termination_crispr/data_chipseq/Pol2_CT_12Mio_HCT116_1087.bw"
+#peakFile         <- "/projects/b1025/arw/analysis/delphine/termination_crispr/data_chipseq/Pol2_CT_12Mio_HCT116_1087.macsPeaks.bed" 
 #assembly         <- "hg19"
 #txTssDown        <- 200
 #minLength        <- 2000
 #minDist          <- 2000
 #Cores            <- 10
-#outName          <- "Pol2_293T_DMSO_rep1"
+#outName          <- "Pol2_CT_12Mio_HCT116_1087"
 
 if (identical(txTssDown,character(0))){
    txTssDown <- 51
@@ -75,12 +75,6 @@ if (identical(Cores,character(0))){
     Cores <- as.numeric(Cores)
 }
 
-if (identical(numSections,character(0))){
-   numSections <- 4
-}else{
-    numSections <- as.numeric(numSections)
-}
-
 if (identical(assembly,character(0))){
    assembly <- "hg19"
 }
@@ -88,6 +82,11 @@ if (identical(assembly,character(0))){
 if (identical(outName,character(0))){
    outName <- sub(".bw", "", basename(bwFile))
 }
+
+print(paste("bwFile:", bwFile))
+print(paste("peakFile:", peakFile))
+print(paste("txdbFile:", txdbFile))
+print(paste("outName:", outName))
 
 print(assembly)
 if ((assembly == "hg19") || (assembly == "hg38")) { organismStr <- "Hsapiens"
@@ -189,7 +188,9 @@ if(assembly=="sacCer3"){
     gnModel$gene_id            <- names(gnModel)
     iv                         <- match(gnModel$tx_name, anno$ensembl_transcript_id)
     gnModel$external_gene_name <- anno[iv, "external_gene_name"]
-    gnModel[gnModel$external_gene_name==""]$external_gene_name <- NA
+    if( length(gnModel[gnModel$external_gene_name==""]) > 0){
+        gnModel[gnModel$external_gene_name==""]$external_gene_name <- NA
+    }
     gnModel$gene_biotype       <- anno[iv, "gene_biotype"]
     gnModel$tx_biotype         <- anno[iv, "transcript_biotype"]
     ## filter for protein coding genes
@@ -198,7 +199,9 @@ if(assembly=="sacCer3"){
     gnModel$gene_id            <- names(gnModel)
     iv                         <- match(gnModel$tx_name, anno$ensembl_transcript_id)
     gnModel$external_gene_name <- anno[iv, "external_gene_name"]
-    gnModel[gnModel$external_gene_name==""]$external_gene_name <- NA
+    if( length(gnModel[gnModel$external_gene_name==""]) > 0){
+        gnModel[gnModel$external_gene_name==""]$external_gene_name <- NA
+    }
     gnModel$gene_biotype       <- anno[iv, "gene_biotype"]
     gnModel$tx_biotype         <- anno[iv, "transcript_biotype"]
     gnModel$refseq_mrna        <- anno[iv, "refseq_mrna"]
