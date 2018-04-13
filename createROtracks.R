@@ -4,14 +4,16 @@ help <- function(){
     cat("createROtracks.R :
 - Create tracks for run on sequencing such as GROseq and PROseq or TT-seq\n")
     cat("Usage: \n")
-    cat("--bamFile    : Sample bam file (must be a full path)                         [required]\n")    
-    cat("--outName    : Prefix for your output file                                   [default = sample]\n")    
-    cat("--assembly   : Genome build hg19, mm9, mm10, dm3 ect.                        [default = hg19]\n")
-    cat("--sepStrands : If the strands should be separated or kept in one track (0/1) [default = 1]\n")
-    cat("--flipStrand : If the strand should be flipped. Depends where the primer is. [default = 1]\n")
-    cat("               (typicllay GROseq no ;PROseq yes) (0/1)                        \n")
-    cat("--extLen     : number of bases to extend the reads to                        [default = 0]\n")
-    cat("--noStrand   : replace strand with * (ChIP-seq) (0/1)                             [default = 0]\n")
+    cat("--bamFile    : Sample bam file (must be a full path)                           [required]\n")    
+    cat("--outName    : Prefix for your output file                                     [default = sample]\n")    
+    cat("--assembly   : Genome build hg19, mm9, mm10, dm3 ect.                          [default = hg19]\n")
+    cat("--sepStrands : If the strands should be separated or kept in one track (0/1)   [default = 1]\n")
+    cat("--flipStrand : If the strand should be flipped. Depends where the primer is.   [default = 1]\n")
+    cat("               (typicllay GROseq no ;TTseq, RNAseq, PROseq yes) (0/1)                       \n")
+    cat("--extLen     : number of bases to extend the reads to                          [default = 0]\n")
+    cat("--noStrand   : replace strand with * (ChIP-seq) (0/1)                          [default = 0]\n")
+    cat("--threePrime : Only report 1 position at the 3' end of the read (PRO-seq)(0/1) [default = 0]\n")
+    cat("--fivePrime  : Only report 1 position at the 5' end of the read (0/1)          [default = 0]\n")
     cat("\n")
     q()
 }
@@ -20,13 +22,15 @@ help <- function(){
 if(length(args)==0 || !is.na(charmatch("-help",args))){
     help()
 } else {
-    bamFile     <- sub('--bamFile=', '', args[grep('--bamFile=', args)])
-    outName     <- sub('--outName=', '', args[grep('--outName=', args)])
-    assembly    <- sub('--assembly=', '', args[grep('--assembly=', args)])
+    bamFile     <- sub('--bamFile=', '',    args[grep('--bamFile=', args)])
+    outName     <- sub('--outName=', '',    args[grep('--outName=', args)])
+    assembly    <- sub('--assembly=', '',   args[grep('--assembly=', args)])
     sepStrands  <- sub('--sepStrands=', '', args[grep('--sepStrands=', args)])
     flipStrand  <- sub('--flipStrand=', '', args[grep('--flipStrand=', args)])
-    extLen      <- sub('--extLen=', '', args[grep('--extLen=', args)])
-    noStrand    <- sub('--noStrand=', '', args[grep('--noStrand=', args)])
+    extLen      <- sub('--extLen=', '',     args[grep('--extLen=', args)])
+    noStrand    <- sub('--noStrand=', '',   args[grep('--noStrand=', args)])
+    threePrime  <- sub('--threePrime=', '', args[grep('--threePrime=', args)])
+    fivePrime   <- sub('--fivePrime=', '',  args[grep('--fivePrime=', args)])
 }
 
 print(bamFile)
@@ -57,6 +61,19 @@ if (identical(extLen,character(0))){
    extLen <- as.numeric(extLen)
 }
 
+if (identical(threePrime,character(0))){
+   threePrime <- 0
+}else{
+   threePrime <- as.numeric(threePrime)
+}
+
+if (identical(fivePrime,character(0))){
+   fivePrime <- 0
+}else{
+   fivePrime <- as.numeric(fivePrime)
+}
+
+
 library(GenomicAlignments)
 library(Rsamtools)
 library(rtracklayer)
@@ -80,61 +97,63 @@ if (assembly == "sacCer3") organism <- Scerevisiae
 if (assembly == "dm3") organism <-Dmelanogaster
 
 bam2bw <- function(BF,organism){
-    
     cat("opening:", BF, sep="\n")
     bd                       <- readGAlignments(BF)
-    seqlevels(bd,force=TRUE) <- seqlevels(bd)[grep("_|chrM",seqlevels(bd), invert=TRUE)]
+    cat("remove unassembled and viral chromosomes:", BF, sep="\n") 
+    seqlevels(bd,force=TRUE) <- seqlevels(bd)[grep("_|EBV",seqlevels(bd), invert=TRUE)]
     print(seqlevels(bd))
-
     if( flipStrand > 0 ){
         cat("change the strand:", BF, sep="\n")
-        strand(bd) <- ifelse(strand(bd) == '+', '-', '+')
+        strand(bd)           <- ifelse(strand(bd) == '+', '-', '+')
     }
-
     if( noStrand > 0 ){
-        strand(bd) <- '*'
+        strand(bd)           <- '*'
     }
-    
     cat("convert to GRanges\n")
-    mygr <- as(bd,"GRanges")
+    mygr                    <- as(bd,"GRanges")
     if (extLen > 0){
         cat("extend reads:", BF, sep="\n")
-        mygr <- resize(mygr, extLen, fix='start')
+        mygr                 <- resize(mygr, extLen, fix='start')
     }
-    
+    if (threePrime > 0){
+        cat("take three prime position of the reads:", BF, sep="\n")
+        mygr                 <- resize(mygr, width=1, fix='end')
+        outName              <- sub("$", ".3prime", outName)
+    }
+    if ( fivePrime > 0 ){
+        cat("take five prime position of the reads:", BF, sep="\n")
+        mygr                 <- resize(mygr, width=1, fix='start')
+        outName              <- sub("$", ".5prime", outName)
+    }
     if (sepStrands > 0){
-        
         cat("getting coverage for separate strands\n")
         ## get plus coverage                                                             
-        plus                 <- coverage(mygr[strand(mygr) == "+"])
-        plus.rpm             <- plus*(1e6/length(bd))
-        seqlengths(plus.rpm) <- seqlengths(organism)[names(plus.rpm)]
+        plus                  <- coverage(mygr[strand(mygr) == "+"])
+        plus.rpm              <- plus*(1e6/length(bd))
+        seqlengths(plus.rpm)  <- seqlengths(organism)[names(plus.rpm)]
         ## get minus coverage
         minus                 <- coverage(mygr[strand(mygr) == "-"])
         minus.rpm             <- minus*(-1e6/length(bd))
         seqlengths(minus.rpm) <- seqlengths(organism)[names(minus.rpm)]
         ## set the outfile name
-        plus.outfile  <- sub("$", ".plus.bw", outName)
-        minus.outfile <- sub("$", ".minus.bw", outName)
+        plus.outfile          <- sub("$", ".plus.bw", outName)
+        minus.outfile         <- sub("$", ".minus.bw", outName)
         ## export rpm to bigWig
         cat(paste("exporting to plus bigwig", plus.outfile, "\n", sep="\t"))
-        export.bw(plus.rpm, plus.outfile)
+        export.bw( plus.rpm, plus.outfile )
         cat(paste("exporting to minus bigwig", minus.outfile, "\n", sep="\t"))
-        export.bw(minus.rpm, minus.outfile)      
+        export.bw( minus.rpm, minus.outfile )      
         cat("export complete:", BF, sep="\n")
-
-    }else{
-        
+    }else{       
         cat("getting coverage for both strands\n")
-        cov <- coverage(mygr)
-        rpm <- cov*(1e6/length(bd))
-        seqlengths(rpm) <- seqlengths(organism)[names(rpm)]
+        cov                  <- coverage(mygr)
+        rpm                  <- cov*(1e6/length(bd))
+        seqlengths(rpm)      <- seqlengths(organism)[names(rpm)]
         ## export rpm to bigWig
-        outfile <- sub("$", ".bw", outName)
-        cat(paste("exporting to bigwig", outfile, "\n", sep="\t"))
-        export.bw(rpm, outfile)
-        cat("export complete:", BF, sep="\n")
-          
+        outfile              <- sub("$", ".bw", outName)
+        cat( paste("exporting to bigwig", outfile, "\n", sep="\t") )
+        export.bw( rpm, outfile )
+        cat( "export complete:", BF, sep="\n" )          
     }
 }
 
