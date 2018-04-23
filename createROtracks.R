@@ -14,6 +14,9 @@ help <- function(){
     cat("--noStrand   : replace strand with * (ChIP-seq) (0/1)                          [default = 0]\n")
     cat("--threePrime : Only report 1 position at the 3' end of the read (PRO-seq)(0/1) [default = 0]\n")
     cat("--fivePrime  : Only report 1 position at the 5' end of the read (0/1)          [default = 0]\n")
+    cat("--SpikeIn    : Fraction of control spike over experiment to normalize reads    [default = 1]
+                         if your control spikein total reads are 3549426 and experiment
+                         are 4812918, your fraction is 0.737479 \n")    
     cat("\n")
     q()
 }
@@ -31,9 +34,16 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     noStrand    <- sub('--noStrand=', '',   args[grep('--noStrand=', args)])
     threePrime  <- sub('--threePrime=', '', args[grep('--threePrime=', args)])
     fivePrime   <- sub('--fivePrime=', '',  args[grep('--fivePrime=', args)])
+    SpikeIn     <- sub('--SpikeIn=', '',  args[grep('--SpikeIn=', args)])
 }
 
 print(bamFile)
+
+if (identical(SpikeIn,character(0))){
+   SpikeIn <- 1
+}else{
+    SpikeIn <- as.numeric(SpikeIn)
+}
 
 if (identical(outName,character(0))){
    outName <- sub(".bam", "", bamFile)
@@ -50,7 +60,7 @@ if (identical(sepStrands,character(0))){
 }
 
 if (identical(flipStrand,character(0))){
-   flipStrand <- 1
+    flipStrand <- 1
 }else{
     flipStrand <- as.numeric(flipStrand)
 }
@@ -73,6 +83,11 @@ if (identical(fivePrime,character(0))){
    fivePrime <- as.numeric(fivePrime)
 }
 
+if (identical(fivePrime,character(0))){
+   fivePrime <- 0
+}else{
+   fivePrime <- as.numeric(fivePrime)
+}
 
 library(GenomicAlignments)
 library(Rsamtools)
@@ -125,7 +140,7 @@ bam2bw <- function(BF,organism){
         mygr                 <- resize(mygr, width=1, fix='start')
         outName              <- sub("$", ".5prime", outName)
     }
-    if (sepStrands > 0){
+    if (sepStrands > 0){        
         cat("getting coverage for separate strands\n")
         ## get plus coverage                                                             
         plus                  <- coverage(mygr[strand(mygr) == "+"])
@@ -136,13 +151,30 @@ bam2bw <- function(BF,organism){
         minus.rpm             <- minus*(-1e6/length(bd))
         seqlengths(minus.rpm) <- seqlengths(organism)[names(minus.rpm)]
         ## set the outfile name
-        plus.outfile          <- sub("$", ".plus.bw", outName)
-        minus.outfile         <- sub("$", ".minus.bw", outName)
+        plus.outfile          <- sub("$", ".rpm.plus.bw", outName)
+        minus.outfile         <- sub("$", ".rpm.minus.bw", outName)
         ## export rpm to bigWig
-        cat(paste("exporting to plus bigwig", plus.outfile, "\n", sep="\t"))
+        cat(paste("exporting r.p.m. plus bigwig", plus.outfile, "\n", sep="\n"))
         export.bw( plus.rpm, plus.outfile )
-        cat(paste("exporting to minus bigwig", minus.outfile, "\n", sep="\t"))
+        cat(paste("exporting r.p.m. minus bigwig", minus.outfile, "\n", sep="\n"))
         export.bw( minus.rpm, minus.outfile )      
+        if( SpikeIn != 1 ){
+            print("making SpikeIn normalized tracks")
+            ## get plus coverage
+            plus.si               <- plus*SpikeIn
+            seqlengths(plus.si)   <- seqlengths(organism)[names(plus.si)]
+            ## get minus coverage
+            minus.si             <- minus*(-SpikeIn)
+            seqlengths(minus.si) <- seqlengths(organism)[names(minus.si)]
+            ## set the outfile name
+            plus.si.outfile      <- sub("$", ".spikeNorm.plus.bw", outName)
+            minus.si.outfile     <- sub("$", ".spikeNorm.minus.bw", outName)
+            ## export rpm to bigWig
+            cat(paste("exporting spikeNorm plus bigwig", plus.si.outfile, "\n", sep="\n"))
+            export.bw( plus.si, plus.si.outfile )
+            cat(paste("exporting spikeNorm minus bigwig", minus.si.outfile, "\n", sep="\n"))
+            export.bw( minus.si, minus.si.outfile ) 
+        }
         cat("export complete:", BF, sep="\n")
     }else{       
         cat("getting coverage for both strands\n")
@@ -151,8 +183,17 @@ bam2bw <- function(BF,organism){
         seqlengths(rpm)      <- seqlengths(organism)[names(rpm)]
         ## export rpm to bigWig
         outfile              <- sub("$", ".bw", outName)
-        cat( paste("exporting to bigwig", outfile, "\n", sep="\t") )
+        cat( paste("exporting r.p.m. bigwig", outfile, "\n", sep="\t") )
         export.bw( rpm, outfile )
+        if( SpikeIn != 1 ){
+            print("making SpikeIn normalized tracks")
+            cov.si             <- cov*SpikeIn
+            seqlengths(cov.si) <- seqlengths(organism)[names(cov.si)]
+            ## export rpm to bigWig
+            outfile.si         <- sub("$", ".spikeNorm.bw", outName)
+            cat( paste("exporting spikeNorm bigwig", outfile.si, "\n", sep="\n") )
+            export.bw( cov.si, outfile.si )
+        }
         cat( "export complete:", BF, sep="\n" )          
     }
 }
