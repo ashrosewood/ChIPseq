@@ -28,15 +28,6 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     Control <- sub( '--Control=', '',args[grep('--Control=',args)])
 }
 
-## debug
-#setwd("/projects/b1025/arw/analysis/kevin/SEC/")
-#tab <- "tables/pausing_index/Pol2_293T_DMSO_817_rep1.pausingIndexAverageCoverages.txt"
-#outName <- "plots/ecdf/Pol2_293T_DMSO_817_rep1.pausingIndex"
-#Xmax <- 10
-#cols <- "plots/plotColors/293T_rep1_817_colors.txt"
-#PRR <- 0
-#Control <- "PolII_DMSO_293T_817_rep1"
-
 if (identical(outName,character(0))){
    outName <- gsub("AverageCoverages|.txt", "", basename(df))
 }
@@ -77,9 +68,11 @@ Body.or      <- Body[ , paste(Order,"body", sep="_") ]
 stopifnot( sub("_tss", "", colnames(Tss.or)) == sub("_body", "", colnames(Body.or)))
 stopifnot( rownames(Tss.or) == rownames(Body.or) )
 
+pseudo <- min(c(min(Tss.or[!Tss.or==0]),min(Body.or[!Body.or==0]))) 
+
 ## pausing index
-PI <- do.call(cbind, lapply(Order, function(x){
-    pi           <- log2( Tss.or[, paste0(x, "_tss")] / Body.or[, paste0(x, "_body")] )
+PI <- do.call(cbind, lapply(Order, function(x){    
+    pi           <- log2( (Tss.or[, paste0(x, "_tss")]+pseudo) / (Body.or[, paste0(x, "_body")]+pseudo) )
     pi           <- as.data.frame(pi)
     rownames(pi) <- rownames(Tss.or)
     colnames(pi) <- sub("$", "_pi", x)
@@ -88,7 +81,7 @@ PI <- do.call(cbind, lapply(Order, function(x){
 ))
 
 Prr <- do.call(cbind, lapply(Order, function(x){
-    pi           <- log2( (Body.or[, paste0(x, "_body")]) / (Tss.or[, paste0(x, "_tss")]) )
+    pi           <- log2( (Body.or[, paste0(x, "_body")]+pseudo) / (Tss.or[, paste0(x, "_tss")]+pseudo) )
     pi           <- as.data.frame(pi)
     rownames(pi) <- rownames(Tss.or)
     colnames(pi) <- sub("$", "", x)
@@ -124,7 +117,7 @@ if(PRR==0){
     }else{
         Xmin <- as.numeric(Xmin)
     }
-    pdf(file=sub("$", ".pdf", outName),width=8,height=5)
+    pdf(file=sub("$", ".PI.pdf", outName),width=8,height=5)
     print({
         p <-ggplot(df.long, aes(x=value, colour=variable)) +
             stat_ecdf(size=1.1) +
@@ -171,7 +164,7 @@ if(PRR==0){
     }else{
         Xmin <- as.numeric(Xmin)
     }
-    pdf(file=sub("$", ".pdf", outName),width=8,height=5)
+    pdf(file=sub("$", ".PRR.pdf", outName),width=8,height=5)
     print({
         p <-
             ggplot(df.long, aes(x=value, colour=variable)) +
