@@ -4,13 +4,18 @@ help <- function(){
     cat("ChIP_makeMetaPlot.R :
 - Plot ecdf of pausing indexes calculated from ChIP_CalcPausingIndex.R and save as pdf\n")
     cat("Usage: \n")
-    cat("--Dir     : path to heatmap tables                                          [required]\n")
-    cat("--Pattern : grep pattern for heatmap tables to use quotes (ex. PolII.*293T) [optional]\n")    
-    cat("--outName : prefix for plot name. Type will be appended to this in script   [required]\n")
-    cat("--cols    : need the same number as samples separated by comma              [default = viridis palette]\n")
-    cat("--bins    : number of bins each window is (ie 25 or 50)                     [default = 25]\n")
-    cat("--Type    : Tss, Tes, Peaks                                                 [default = Tss]\n")
-    cat("--Height  : plot height                                                     [default = max of colMeans]\n")
+    cat("--Dir        : path to heatmap tables                                          [required]\n")
+    cat("--Pattern    : grep pattern for heatmap tables to use quotes (ex. PolII.*293T) [optional]\n")    
+    cat("--outName    : prefix for plot name. Type will be appended to this in script   [required]\n")
+    cat("--cols       : need the same number as samples separated by comma              [default = viridis palette]\n")
+    cat("--bins       : number of bins each window is (ie 25 or 50)                     [default = 25]\n")
+    cat("--Type       : Tss, Tes, Peaks                                                 [default = Tss]\n")
+    cat("--Height     : plot height                                                     [default = max of colMeans]\n")
+    cat("--upStream   : number of bp upstream of Tss in matrix                          [required]\n")
+    cat("--downStream : number of bp downstream of Tss in matrix                        [required]\n")
+    cat("--Label      : Alternate plot label if not Type (example: Pause_site)          [default = Type]
+                         Type is used to grep the files. If file name match use Type.                   \n")
+
     cat("\n")
     q()
 }
@@ -26,20 +31,15 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     bins    <- sub( '--bins=', '',args[grep('--bins=',args)])
     Type    <- sub( '--Type=', '',args[grep('--Type=',args)])
     Height  <- sub( '--Height=', '',args[grep('--Height=',args)])
+    upStream   <- as.numeric( sub( '--upStream=', '',args[grep('--upStream=',args)]) )
+    downStream <- as.numeric( sub( '--downStream=', '',args[grep('--downStream=',args)]) )
+    Label      <- sub( '--Label=', '',args[grep('--Label=',args)])
 }
 
 library(RColorBrewer)
 library(viridis)
 library(reshape2)
 library(ggplot2)
-
-#setwd("/projects/b1025/arw/analysis/kevin/SEC/")
-#Dir="tables/heatmaps/MYC_H2171_1021"
-#Pattern="H2171_1021.*_Peaks5000.binary"
-#outName="plots/meta_plots/H2171_1021_Peaks5000binary"
-#cols="plots/plotColors/1021_colors.txt"
-#bins=25
-#Type="Peaks"
 
 ## set defaults
 if (identical(bins,character(0))){
@@ -50,6 +50,10 @@ if (identical(bins,character(0))){
 
 if (identical(Type,character(0))){
    Type <- "Tss"
+}
+
+if (identical(Label,character(0))){
+   Label <- Type
 }
 
 Dir
@@ -69,6 +73,7 @@ for (i in 1:length(foo))
 }
 
 SAMPLES <- ls(pattern=".df$")
+SAMPLES <- SAMPLES[grep("^anti.df$|^sense.df$", SAMPLES, invert=TRUE)]
 SAMPLES
 
 ## make a data frame with matrix column averages
@@ -102,33 +107,38 @@ if (identical(Height, character(0))){
 }
 
 if (identical(cols,character(0))){
-    Cols <- rainbow(length(foo))#viridis(length(foo))
+    Cols <- viridis(length(foo))#rainbow(length(foo))#
 }else{
     df.col           <- read.table(cols,sep="\t", header=TRUE,  comment.char = "")
     rownames(df.col) <- paste(df.col$sample)
     Cols             <- paste(df.col[sub(".df", "", SAMPLES), "color"])
 }
 
+Labels <- c(paste0("-",upStream)
+           ,Label
+           ,paste0("+", downStream))
+
+
+if(bins==0){
+    Breaks <- c(0
+               ,upStream
+               ,upStream + downStream)
+}else{
+    Breaks <- c(0
+               ,upStream/bins
+               ,(upStream + downStream)/bins)   
+}
+
 pdf(file=sub("$", paste0(Type, ".metaPlot.pdf"), outName),width=8,height=5)
 print({
     p <-
-
     ggplot(df.long, aes(x=x, y=value, color=variable)) +
-    geom_line(size=1.5)+
+    geom_line(size=1)+
     scale_color_manual("sample", values = Cols )+
-        scale_x_continuous(breaks=c(0
-                                   ,nrow(df)/4
-                                   ,nrow(df)/2
-                                   ,nrow(df)/4*3
-                                   ,nrow(df)
-                                    )
-                          ,labels=c(paste0("-",nrow(df)/2*bins)
-                                   ,paste0("-",nrow(df)/4*bins)
-                                   ,Type
-                                   ,paste0("+",nrow(df)/4*bins)
-                                   ,paste0("+", nrow(df)/2*bins))
-                           )+
-    ylab("r.p.m.")+
+    scale_x_continuous(breaks = Breaks
+                      ,labels = Labels
+                       )+
+    ylab("signal")+
     xlab("")+
         ylim(Min,Height)+
     ggtitle(basename(outName))+
