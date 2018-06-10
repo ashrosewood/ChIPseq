@@ -62,14 +62,19 @@ if ((assembly == "mm9") || (assembly == "mm10")) { organism <- Mmusculus }
 if (assembly == "sacCer3") organism <- Scerevisiae
 if (assembly == "dm3") organism <-Dmelanogaster
 
+print("import bws")
 con.bw  <- import.bw(conFile)
 exp.bw  <- import.bw(expFile)
 
+print("calc cov")
 con.cov <- coverage(con.bw, weight='score')
 exp.cov <- coverage(exp.bw, weight='score')    
 
+print("calc log2FC")
 log2FC <- log2( (exp.cov + pseudo) / (con.cov + pseudo) )
 seqinfo(log2FC) <- seqinfo(organism)[seqlevels(log2FC)]
+
+print("export log2FC bw")
 export.bw(log2FC, outName)
 
 print("done")
