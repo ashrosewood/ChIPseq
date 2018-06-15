@@ -26,16 +26,16 @@ help <- function(){
 if(!is.na(charmatch("-h",args)) || !is.na(charmatch("-help",args))){
     help()
 } else {
-    Table   <- sub( '--Table=', '', args[grep('--Table=', args)])
-    Control <- sub( '--Control=', '', args[grep('--Control=', args)])
-    outName <- sub( '--outName=', '',args[grep('--outName=',args)])
-    PRR     <- sub( '--PRR=', '',args[grep('--PRR=',args)])
-    FC      <- sub( '--FC=', '',args[grep('--FC=',args)])
-    q1Col   <- sub( '--q1Col=', '',args[grep('--q1Col=',args)])
-    q2Col   <- sub( '--q2Col=', '',args[grep('--q2Col=',args)])
-    q3Col   <- sub( '--q3Col=', '',args[grep('--q3Col=',args)])
-    q4Col   <- sub( '--q4Col=', '',args[grep('--q4Col=',args)])
-    plotPcc <- sub( '--plotPcc=', '',args[grep('--plotPcc=',args)])
+    Table      <- sub( '--Table=', '', args[grep('--Table=', args)])
+    Control    <- sub( '--Control=', '', args[grep('--Control=', args)])
+    outName    <- sub( '--outName=', '',args[grep('--outName=',args)])
+    PRR        <- sub( '--PRR=', '',args[grep('--PRR=',args)])
+    FoldChange <- sub( '--FC=', '',args[grep('--FC=',args)])
+    q1Col      <- sub( '--q1Col=', '',args[grep('--q1Col=',args)])
+    q2Col      <- sub( '--q2Col=', '',args[grep('--q2Col=',args)])
+    q3Col      <- sub( '--q3Col=', '',args[grep('--q3Col=',args)])
+    q4Col      <- sub( '--q4Col=', '',args[grep('--q4Col=',args)])
+    plotPcc    <- sub( '--plotPcc=', '',args[grep('--plotPcc=',args)])
 }
 
 if (identical(PRR,character(0))){
@@ -50,10 +50,10 @@ if (identical(plotPcc,character(0))){
     plotPcc <- as.numeric(plotPcc)
 }
 
-if (identical(FC,character(0))){
-    FC      <- 2
+if (identical(FoldChange,character(0))){
+    FoldChange      <- 2
 }else{
-    FC      <- as.numeric(FC)
+    FoldChange      <- as.numeric(FoldChange)
 }
 
 if (identical(q1Col,character(0))){
@@ -72,7 +72,7 @@ if (identical(q4Col,character(0))){
 cat("Table:" ,    Table ,    sep="\n")
 cat("outName:" ,  outName ,  sep="\n")
 cat("Control:" ,  Control ,  sep="\n")
-cat("FC:" ,       FC ,       sep="\n")
+cat("FC:" ,       FoldChange , sep="\n")
 cat("PRR:" ,      PRR ,      sep="\n")
 
 library(RColorBrewer)
@@ -107,6 +107,8 @@ if(!(file.exists( dirname(outName) ))) {
     dir.create(dirname(outName),FALSE,TRUE)  
 }
 
+cols <- colorRampPalette(brewer.pal(11, "RdYlBu"))(500)[seq(1,500,length.out=length(exps))]
+
 if(PRR==0){
     ## pausing index
     print("Calculating ratio of promoter over body")
@@ -129,10 +131,10 @@ if(PRR==0){
     }))
     for (i in 1:length(exps)) {
         for (j in 1:length(exps)){
-            q1 <- log2(fc[,i]) > log2(FC) & log2(fc[,j]) > log2(FC)
-            q2 <- log2(fc[,j]) > log2(FC) & log2(fc[,i]) < -log2(FC)
-            q3 <- log2(fc[,i]) < -log2(FC) & log2(fc[,j]) < -log2(FC)
-            q4 <- log2(fc[,i]) > log2(FC) & log2(fc[,j]) < -log2(FC)
+            q1 <- log2(fc[,i]) > log2(FoldChange) & log2(fc[,j]) > log2(FoldChange)
+            q2 <- log2(fc[,j]) > log2(FoldChange) & log2(fc[,i]) < -log2(FoldChange)
+            q3 <- log2(fc[,i]) < -log2(FoldChange) & log2(fc[,j]) < -log2(FoldChange)
+            q4 <- log2(fc[,i]) > log2(FoldChange) & log2(fc[,j]) < -log2(FoldChange)
             png(paste(outName, names(fc)[i], "vs", names(fc)[j], "PausingIndexFC.png", sep="."), 500, 500)
             par(mar=c(5,5,5,5))
             plot(log2(fc[,i]), log2(fc[,j]),
@@ -150,7 +152,7 @@ if(PRR==0){
             points(log2(fc[ q3, i]), log2(fc[q3, j]), col=q3Col, pch=19,cex=1)
             points(log2(fc[ q2, i]), log2(fc[q2, j]), col=q2Col, pch=19,cex=1)
             points(log2(fc[ q4, i]), log2(fc[q4, j]), col=q4Col, pch=19,cex=1)
-            legend("bottomright", title=paste("FC:", FC)
+            legend("bottomright", title=paste("FC:", FoldChange)
                   ,legend=c(paste("q1",sum(q1))
                            ,paste("q2",sum(q2))
                            ,paste("q3",sum(q3))
@@ -160,6 +162,33 @@ if(PRR==0){
             abline(h=0, lty="dashed", col="black")
             abline(v=0, lty="dashed", col="black")
             dev.off()
+            png(paste(outName, names(fc)[i], "vs", names(fc)[j], "densityPausingIndexFC.png", sep="."), 500, 500)
+            smoothScatter(log2(fc[,i]), log2(fc[,j]),
+                         ,colramp=colorRampPalette(c("white", brewer.pal(9, "Blues")))
+                         ,col=NA
+                         ,xlab=paste("log2(",names(fc[i]),")",sep="")
+                         ,ylab=paste("log2(",names(fc[j]),")",sep="")
+                         ,main="Pausing Index (Tss/Body)\nFold Change"
+                         ,nbin=300
+                         ,cex=2
+                          )
+            abline(h=0, lty=2, col="black")
+            abline(v=0, lty=2, col="black")
+            if(plotPcc==1){
+                legend("topleft",legend= round(cor(fc[,i],fc[,j],method="pearson"), 4), cex=1.1)
+            }
+            points(log2(fc[ q1, i]), log2(fc[q1, j]), col=q1Col, pch=19,cex=1)
+            points(log2(fc[ q3, i]), log2(fc[q3, j]), col=q3Col, pch=19,cex=1)
+            points(log2(fc[ q2, i]), log2(fc[q2, j]), col=q2Col, pch=19,cex=1)
+            points(log2(fc[ q4, i]), log2(fc[q4, j]), col=q4Col, pch=19,cex=1)
+            legend("bottomright", title=paste("FC:", FoldChange)
+                  ,legend=c(paste("q1",sum(q1))
+                           ,paste("q2",sum(q2))
+                           ,paste("q3",sum(q3))
+                           ,paste("q4",sum(q4))
+                            )
+                  ,pch=c(19,19,19,19), col=c(q1Col,q2Col,q3Col,q4Col),cex=0.9,)
+            dev.off()
         }
     }
     Ratio$gene_id <- rownames(Ratio)
@@ -167,8 +196,14 @@ if(PRR==0){
     write.table(fc, file=paste(outName, "PausingIndexFC.txt", sep="."), sep="\t", quote=FALSE, col.names=TRUE, row.names=FALSE)
     write.table(Ratio, file=paste(outName, "PausingIndex.txt", sep="."), sep="\t", quote=FALSE, col.names=TRUE, row.names=FALSE)
     ## violin plot
-    df.long <- melt(fc[,grep("gene_id", names(fc), invert=TRUE)])
+    df.long          <- melt(fc[,grep("gene_id", names(fc), invert=TRUE)])
     df.long$variable <- sub("_fc$", "", df.long$variable)
+    minMax           <- apply(log2(fc[,grep("gene_id", names(fc), invert=TRUE)]), 2, function(x)boxplot.stats(x)$stats[c(1, 5)])
+    mround           <- function(x,base){ 
+        base*round(x/base) 
+    } 
+    Ymin <- mround(min(minMax)-0.5, 1)
+    Ymax <- mround(max(minMax)+0.5, 1)
     pdf(paste(outName, "violinPlotPausingIndexFC.pdf", sep="."), 6, 5)
     print({
     p <-
@@ -180,6 +215,8 @@ if(PRR==0){
         ylab("log2(Pausing Index FC)")+
         xlab("")+
         ggtitle(basename(outName))+
+        geom_hline(yintercept=log2(FoldChange), linetype="dashed", color = "grey")+
+        geom_hline(yintercept=-log2(FoldChange), linetype="dashed", color = "grey")+
         theme(panel.grid.major = element_blank()
              ,panel.grid.minor = element_blank(), 
               panel.background = element_blank()
@@ -201,6 +238,9 @@ if(PRR==0){
             ylab("log2(PausingIndex FC)")+
             xlab("")+
             ggtitle(basename(outName))+
+            scale_y_continuous(limits=c(Ymin, Ymax), breaks=scales::pretty_breaks(n = Ymax-Ymin))+
+            geom_hline(yintercept=log2(FoldChange), linetype="dashed", color = "grey")+
+            geom_hline(yintercept=-log2(FoldChange), linetype="dashed", color = "grey")+
             theme(panel.grid.major = element_blank()
                  ,panel.grid.minor = element_blank(), 
                   panel.background = element_blank()
@@ -232,10 +272,10 @@ if(PRR==0){
     }))
     for (i in 1:length(exps)) {
         for (j in 1:length(exps)){
-            q1 <- log2(fc[,i]) > log2(FC) & log2(fc[,j]) > log2(FC)
-            q2 <- log2(fc[,j]) > log2(FC) & log2(fc[,i]) < -log2(FC)
-            q3 <- log2(fc[,i]) < -log2(FC) & log2(fc[,j]) < -log2(FC)
-            q4 <- log2(fc[,i]) > log2(FC) & log2(fc[,j]) < -log2(FC)
+            q1 <- log2(fc[,i]) > log2(FoldChange) & log2(fc[,j]) > log2(FoldChange)
+            q2 <- log2(fc[,j]) > log2(FoldChange) & log2(fc[,i]) < -log2(FoldChange)
+            q3 <- log2(fc[,i]) < -log2(FoldChange) & log2(fc[,j]) < -log2(FoldChange)
+            q4 <- log2(fc[,i]) > log2(FoldChange) & log2(fc[,j]) < -log2(FoldChange)
             png(paste(outName, names(fc)[i], "vs", names(fc)[j], "PromterReleaseFC.png", sep="."), 500, 500)
             par(mar=c(5,5,5,5))
             plot(log2(fc[,i]), log2(fc[,j]),
@@ -253,7 +293,7 @@ if(PRR==0){
             points(log2(fc[ q3, i]), log2(fc[q3, j]), col=q3Col, pch=19,cex=1)
             points(log2(fc[ q2, i]), log2(fc[q2, j]), col=q2Col, pch=19,cex=1)
             points(log2(fc[ q4, i]), log2(fc[q4, j]), col=q4Col, pch=19,cex=1)
-            legend("bottomright", title=paste("FC:", FC)
+            legend("bottomright", title=paste("FC:", FoldChange)
                   ,legend=c(paste("q1",sum(q1))
                            ,paste("q2",sum(q2))
                            ,paste("q3",sum(q3))
@@ -263,7 +303,33 @@ if(PRR==0){
             abline(h=0, lty="dashed", col="black")
             abline(v=0, lty="dashed", col="black")
             dev.off()
-
+            png(paste(outName, names(fc)[i], "vs", names(fc)[j], "densityPromterReleaseFC.png", sep="."), 500, 500)
+            smoothScatter(log2(fc[,i]), log2(fc[,j]),
+                         ,colramp=colorRampPalette(c("white", brewer.pal(9, "Blues")))
+                         ,col=NA
+                         ,xlab=paste("log2(",names(fc[i]),")",sep="")
+                         ,ylab=paste("log2(",names(fc[j]),")",sep="")
+                         ,main="Promoter Release Ratio (Body/Promoter) \nFold Change"
+                         ,nbin=300
+                         ,cex=2
+                          )
+            abline(h=0, lty=2, col="black")
+            abline(v=0, lty=2, col="black")
+            if(plotPcc==1){
+                legend("topleft",legend= round(cor(fc[,i],fc[,j],method="pearson"), 4), cex=1.1)
+            }
+            points(log2(fc[ q1, i]), log2(fc[q1, j]), col=q1Col, pch=19,cex=1)
+            points(log2(fc[ q3, i]), log2(fc[q3, j]), col=q3Col, pch=19,cex=1)
+            points(log2(fc[ q2, i]), log2(fc[q2, j]), col=q2Col, pch=19,cex=1)
+            points(log2(fc[ q4, i]), log2(fc[q4, j]), col=q4Col, pch=19,cex=1)
+            legend("bottomright", title=paste("FC:", FoldChange)
+                  ,legend=c(paste("q1",sum(q1))
+                           ,paste("q2",sum(q2))
+                           ,paste("q3",sum(q3))
+                           ,paste("q4",sum(q4))
+                            )
+                  ,pch=c(19,19,19,19), col=c(q1Col,q2Col,q3Col,q4Col),cex=0.9,)
+            dev.off()
         }
     }
     Ratio$gene_id <- rownames(Ratio)
@@ -273,6 +339,12 @@ if(PRR==0){
     ## violin plot
     df.long <- melt(fc[,grep("gene_id", names(fc), invert=TRUE)])
     df.long$variable <- sub("_fc$", "", df.long$variable)
+    minMax <- apply(log2(fc[,grep("gene_id", names(fc), invert=TRUE)]), 2, function(x)boxplot.stats(x)$stats[c(1, 5)])
+    mround <- function(x,base){ 
+        base*round(x/base) 
+    } 
+    Ymin <- mround(min(minMax)-0.5, 1)
+    Ymax <- mround(max(minMax)+0.5, 1)
     pdf(paste(outName, "violinPlotPromterReleaseFC.pdf", sep="."), 6, 5)
     print({
     p <-
@@ -284,6 +356,8 @@ if(PRR==0){
         ylab("log2(PRR FC)")+
         xlab("")+
         ggtitle(basename(outName))+
+        geom_hline(yintercept=log2(FoldChange), linetype="dashed", color = "grey")+
+        geom_hline(yintercept=-log2(FoldChange), linetype="dashed", color = "grey")+
         theme(panel.grid.major = element_blank()
              ,panel.grid.minor = element_blank(), 
               panel.background = element_blank()
@@ -305,6 +379,9 @@ if(PRR==0){
             ylab("log2(PRR FC)")+
             xlab("")+
             ggtitle(basename(outName))+
+            geom_hline(yintercept=log2(FoldChange), linetype="dashed", color = "grey")+
+            geom_hline(yintercept=-log2(FoldChange), linetype="dashed", color = "grey")+
+            scale_y_continuous(limits=c(Ymin, Ymax), breaks=scales::pretty_breaks(n = Ymax-Ymin))+
             theme(panel.grid.major = element_blank()
                  ,panel.grid.minor = element_blank(), 
                   panel.background = element_blank()
