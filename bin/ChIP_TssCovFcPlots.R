@@ -168,14 +168,15 @@ df.long$variable <- sub("_fc$", "", df.long$variable)
 
 pdf(paste(outName, "violinPlotTssCovFC.pdf", sep="."), 6, 5)
 print({
-    p <- ggplot(df.long, aes(x=variable, y=log2(value), fill=variable)) + 
+    p <-
+    ggplot(df.long, aes(x=variable, y=log2(value), fill=variable)) + 
         geom_violin() +
         geom_boxplot(width=0.1, colour = "black", outlier.colour=NA, notch=TRUE) +
         theme_classic() +
         scale_fill_manual(values=cols) +
         ylab("log2(Tss avg FC)")+
         xlab("")+
-        ggtitle(basename(outName))+
+    ggtitle(basename(outName))+
         theme(panel.grid.major = element_blank()
              ,panel.grid.minor = element_blank(), 
               panel.background = element_blank()
@@ -187,24 +188,27 @@ print({
 })
 dev.off()
 
+minMax <- apply(log2(fc), 2, function(x)boxplot.stats(x)$stats[c(1, 5)])
 
-#minMax <- log2(apply(fc, 2, function(x)boxplot.stats(x)$stats))#[c(1, 5)]))
+mround <- function(x,base){ 
+    base*round(x/base) 
+} 
 
-#stats <- boxplot.stats(fc)$stats
-#df <- data.frame(x="label1", ymin=stats[1], lower=stats[2], middle=stats[3], 
-#                 upper=stats[4], ymax=stats[5])
-
+Ymin <- mround(min(minMax)-0.5, 1)
+Ymax <- mround(max(minMax)+0.5, 1)
 
 pdf(paste(outName, "boxPlotTssCovFC.pdf", sep="."), 6, 5)
 print({
-    p <- ggplot(df.long, aes(x=variable, y=log2(value), fill=variable)) + 
-    stat_boxplot(geom ='errorbar')+
-    geom_boxplot(colour = "black", outlier.colour=NA, notch=TRUE) +
+    p <-
+    ggplot(df.long, aes(x=variable, y=log2(value), fill=variable)) + 
+        stat_boxplot(geom ='errorbar')+
+        geom_boxplot(colour = "black", outlier.colour=NA, notch=TRUE) +
         theme_classic() +
         scale_fill_manual(values=cols) +
         ylab("log2(Tss avg FC)")+
         xlab("")+
         ggtitle(basename(outName))+
+    scale_y_continuous(limits=c(Ymin, Ymax), breaks=scales::pretty_breaks(n = Ymax-Ymin))+
         theme(panel.grid.major = element_blank()
              ,panel.grid.minor = element_blank(), 
               panel.background = element_blank()
@@ -215,8 +219,6 @@ print({
               plot.title=element_text(size=11))
 })
 dev.off()
-
-
 
 
 fc$gene_id    <- rownames(fc)
