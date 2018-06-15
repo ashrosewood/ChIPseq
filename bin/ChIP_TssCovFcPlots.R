@@ -168,7 +168,7 @@ df.long$variable <- sub("_fc$", "", df.long$variable)
 
 pdf(paste(outName, "violinPlotTssCovFC.pdf", sep="."), 6, 5)
 print({
-    p <-
+    p <-        
     ggplot(df.long, aes(x=variable, y=log2(value), fill=variable)) + 
         geom_violin() +
         geom_boxplot(width=0.1, colour = "black", outlier.colour=NA, notch=TRUE) +
@@ -176,7 +176,9 @@ print({
         scale_fill_manual(values=cols) +
         ylab("log2(Tss avg FC)")+
         xlab("")+
-    ggtitle(basename(outName))+
+        ggtitle(basename(outName))+
+        geom_hline(yintercept=log2(FoldChange), linetype="dashed", color = "grey")+
+        geom_hline(yintercept=-log2(FoldChange), linetype="dashed", color = "grey")+
         theme(panel.grid.major = element_blank()
              ,panel.grid.minor = element_blank(), 
               panel.background = element_blank()
@@ -208,7 +210,9 @@ print({
         ylab("log2(Tss avg FC)")+
         xlab("")+
         ggtitle(basename(outName))+
-    scale_y_continuous(limits=c(Ymin, Ymax), breaks=scales::pretty_breaks(n = Ymax-Ymin))+
+        geom_hline(yintercept=log2(FoldChange), linetype="dashed", color = "grey")+
+        geom_hline(yintercept=-log2(FoldChange), linetype="dashed", color = "grey")+
+        scale_y_continuous(limits=c(Ymin, Ymax), breaks=scales::pretty_breaks(n = Ymax-Ymin))+
         theme(panel.grid.major = element_blank()
              ,panel.grid.minor = element_blank(), 
               panel.background = element_blank()
