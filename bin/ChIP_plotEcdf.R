@@ -2,15 +2,16 @@ args <- commandArgs()
 
 help <- function(){
     cat("ChIP_plotEcdf.R :
-- Plot ecdf of pausing indexes calculated from ChIP_CalcPausingIndex.R and save as pdf\n")
+- Plot ecdf of pausing indexes calculated from ChIP_CalcPausingIndex.R and save as pdf.
+- A the minimal coverage in the data frame will be added as a pseudo count.\n")
     cat("Usage: \n")
     cat("--table   : table with tss and body averages (pausingIndexAverageCoverages.txt)   [required]\n")    
-    cat("--outName : defaults to table prefix in current dir (do not put extention)        [default = basename(bigWigFile) ]\n")
+    cat("--outName : defaults to table prefix in current dir (do not put extension)        [default = basename(bigWigFile) ]\n")
     cat("--cols    : need the same number as samples separated by comma                    [default = viridis palette]\n")
     cat("--Xmax    : xlim max for ecdf plot                                                [default = max log2(PI)]\n")
     cat("--Xmin    : xlim min for ecdf plot                                                [default = min log2(PI or PRR)]\n")
     cat("--PRR     : plot the promoter release ratio (body/promoter) instead of pi (0/1)   [default = 0 plot pausing index]\n")
-    cat("--Control : Sample control prefix (no _tss or _body) name to perform ks test with [default = no p-values calculated]\n")
+    cat("--Control : Sample control prefix (no _tss or _body) name to perform ks test with [default = no p-values calculated; pVals=0]\n")
     cat("\n")
     q()
 }
@@ -44,6 +45,17 @@ if (identical(Control,character(0))){
     pVals <- 1
 }
 
+## make output directory if does not exist
+if(!(file.exists( dirname(outName) ))) {
+    print(paste("mkdir", dirname(outName)))
+    dir.create(dirname(outName),FALSE,TRUE)  
+}
+
+print(paste("table:", tab))
+print(paste("outName:", outName))
+print(paste("PRR:", PRR))
+print(paste("pVals:", pVals))
+
 library(RColorBrewer)
 library(viridis)
 library(reshape2)
@@ -68,7 +80,8 @@ Body.or      <- Body[ , paste(Order,"body", sep="_") ]
 stopifnot( sub("_tss", "", colnames(Tss.or)) == sub("_body", "", colnames(Body.or)))
 stopifnot( rownames(Tss.or) == rownames(Body.or) )
 
-pseudo <- min(c(min(Tss.or[!Tss.or==0]),min(Body.or[!Body.or==0]))) 
+pseudo <- min(c(min(Tss.or[!Tss.or==0]),min(Body.or[!Body.or==0])))
+print(paste("pseudo used:", pseudo))
 
 ## pausing index
 PI <- do.call(cbind, lapply(Order, function(x){    
@@ -201,3 +214,5 @@ if(PRR==0){
     Prr$gene_id <- rownames(Prr)
     write.table(Prr, sub("$", ".PRR.txt", outName), sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE) 
 }
+
+print("done")
