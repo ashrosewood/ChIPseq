@@ -41,16 +41,6 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     outName     <- sub( '--outName=', '',args[grep('--outName=',args)])
 }
 
-#txdbFile         <- "/projects/p20742/anno/Txdb/hsapiens_gene_ensembl_Ens75.txdb"
-#bwFile           <- "/projects/b1025/arw/analysis/delphine/termination_crispr/data_chipseq/Pol2_CT_12Mio_HCT116_1087.bw"
-#peakFile         <- "/projects/b1025/arw/analysis/delphine/termination_crispr/data_chipseq/Pol2_CT_12Mio_HCT116_1087.macsPeaks.bed" 
-#assembly         <- "hg19"
-#txTssDown        <- 200
-#minLength        <- 2000
-#minDist          <- 2000
-#Cores            <- 10
-#outName          <- "Pol2_CT_12Mio_HCT116_1087"
-
 if (identical(txTssDown,character(0))){
    txTssDown <- 51
 }else{
@@ -81,6 +71,12 @@ if (identical(assembly,character(0))){
 
 if (identical(outName,character(0))){
    outName <- sub(".bw", "", basename(bwFile))
+}
+
+## make output directory if does not exist
+if(!(file.exists( dirname(outName) ))) {
+    print(paste("mkdir", dirname(outName)))
+    dir.create(dirname(outName),FALSE,TRUE)  
 }
 
 print(paste("bwFile:", bwFile))
@@ -306,16 +302,9 @@ gnModel <- gnModel[gnModel$tssMaxCov > 1]
 gnModel$tx_id <- NULL
 
 ## save the gnModel as a granges object and a tab delimited file
-if ( ! identical( outName, character(0)) ){
-    save(gnModel, file=paste0(outName, ".filteredProteinCodingTx.rda"))
-    write.table(as.data.frame(gnModel)
-               ,file=paste0(outName, ".filteredProteinCodingTx.txt")
-               ,sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE
-                )
-}else{
-    save(gnModel, file=paste0(sub(".bw", "", basename(bwFile)), ".filteredProteinCodingTx.rda"))
-    write.table(as.data.frame(gnModel)
-               ,file=paste0(sub(".bw", "", basename(bwFile)), ".filteredProteinCodingTx.txt")
-               ,sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE
-                )
-}
+save(gnModel, file=paste0(outName, ".filteredProteinCodingTx.rda"))
+write.table(as.data.frame(gnModel)
+           ,file=paste0(outName, ".filteredProteinCodingTx.txt")
+           ,sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE
+            )
+
