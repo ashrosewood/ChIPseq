@@ -2,13 +2,10 @@ args <- commandArgs()
 
 help <- function(){
     cat("ChIP_CalcPausingIndex.R :
-- From a provided GRnages obnject of transcripts calcualte the average coverage in a defined promoter region and the remaining gene body region
-- It first filters for the best transcript with the highest coverage in the defined transcript tss region (from the tss to + txTssDown )
-     I recommend not taking anything upstream as this could be from an alternate transcript.
-- If a peakFile is provided, then take the transcripts only overlapping peaks.
-- Filter for a minimal gene length
-- Filter for a minimal distance to the nearest gene
-- This script is set up for ChIP-seq and does not take the stranded coverage into account\n")
+- From a provided GRnages object of transcripts calculate the average coverage in a defined promoter region and the remaining gene body region.
+- It first filters for the best transcript with the highest coverage in the defined transcript tss region (from the tss to + txTssDown ).
+- If a peakFile is provided, then take the transcripts with tss regions overlapping peaks.
+- This script is set up for ChIP-seq and does not take the stranded coverage into account.\n")
     cat("Usage: \n")
     cat("--regions     : GenomicRanges object with the transcripts of interest    [required]\n")    
     cat("--assembly    : genome assembly build (ex. hg19, dm3)                    [default = hg19]\n")    
@@ -25,7 +22,7 @@ help <- function(){
 }
 
 ## Save values of each argument
-if(length(args)==0 || !is.na(charmatch("-help",args))){
+if( !is.na(charmatch("-h",args)) || !is.na(charmatch("-help",args)) ){
     help()
 } else {
     regions   <- sub( '--regions=', '', args[grep('--regions=', args)] )
@@ -39,11 +36,6 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     outName   <- sub( '--outName=', '',args[grep('--outName=',args)])
 
 }
-
-outName
-bwPattern
-bwFiles
-    
 
 ## select all bigWig files 
 bws <- list.files(bwFiles,pattern=".bw", full.names=TRUE)
@@ -63,6 +55,21 @@ if (identical(assembly,character(0))){
 if (identical(outName,character(0))){
    outName <- sub(".filteredProteinCodingTx.rda|.bed", "", basename(regions))
 }
+
+## make output directory if does not exist
+if(!(file.exists( dirname(outName) ))) {
+    print(paste("mkdir", dirname(outName)))
+    dir.create(dirname(outName),FALSE,TRUE)  
+}
+
+print(paste("regions:", regions))
+print(paste("promUp:", promUp))
+print(paste("promDown:", promDown))
+print(paste("outName:", outName))
+print(paste("bwFiles:", bwFiles))
+print(paste("bwPattern:", bwPattern))
+
+print(paste("bwFiles:", bws))
 
 print(assembly)
 if ((assembly == "hg19") || (assembly == "hg38")) { organismStr <- "Hsapiens"
