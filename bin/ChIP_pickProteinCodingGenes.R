@@ -202,7 +202,7 @@ if(assembly=="sacCer3"){
     gnModel$tx_biotype         <- anno[iv, "transcript_biotype"]
     gnModel$refseq_mrna        <- anno[iv, "refseq_mrna"]
     ## filter for only protein coding with refseq mrna id
-    gnModel                    <- gnModel[!is.na(gnModel$refseq_mrna) & gnModel$tx_biotype=="protein_coding" & gnModel$gene_biotype=="protein_coding"]
+    gnModel                   <- gnModel[!is.na(gnModel$refseq_mrna) & !gnModel$refseq_mrna =="NA" & gnModel$tx_biotype=="protein_coding" & gnModel$gene_biotype=="protein_coding"]
 }
 
 ###########################################
@@ -243,7 +243,6 @@ gnModel    <- gnModel.or[!reps]
 ## calculate distance to the nearest gene that does not directly overlap
 dists                     <- as.data.frame( distanceToNearest(gnModel, ignore.strand=TRUE) )
 gnModel$distanceToNearest <- dists$distance
-#gnModel$nearestTx         <- gnModel[dists$subjectHits]$tx_name
 
 ###########################################
 ## Filter for tss's with peaks if provided
@@ -269,8 +268,6 @@ gnModel <- gnModel[width(gnModel) >= minLength]
 ## Filter for minimal distance between genes
 ###########################################
 gnModel <- gnModel[gnModel$distanceToNearest >= minDist]
-
-#gnModel[gnModel$tx_name=="ENST00000529694"] example gene that directly overlaps 
 
 maxCov <- function(bw,model){
     cat("importing:", bw, sep="\n")
