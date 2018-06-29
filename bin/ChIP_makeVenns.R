@@ -20,16 +20,24 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
 } else {
     peakDir     <- sub( '--peakDir=', '', args[grep('--peakDir=', args)])
     peakPattern <- sub( '--peakPattern=', '', args[grep('--peakPattern=', args)])
-    outName     <- sub( '--outName=', '',args[grep('--outName=',args)])
+    outDir      <- sub( '--outDir=', '',args[grep('--outDir=',args)])
     colA        <- sub( '--colA=', '',args[grep('--colA=',args)])
     colB        <- sub( '--colB=', '',args[grep('--colB=',args)])
 }
 
-peakDir <- "data_chipseq"
-peakPattern <- "1138.macsPeaks.bed"
-outDir  <- "plots/SEC/TANGO-1138/venn"
-colA <- "red"
-colB <- "blue"
+if (identical(colA,character(0))){
+    colA <- "red"
+}
+
+if (identical(colA,character(0))){
+    colB <- "blue"
+}
+
+
+if(!(file.exists( outDir ))) {
+    print(paste("mkdir", dirname(outName)))
+    dir.create(dirname(outName),FALSE,TRUE)  
+}
 
 library(rtracklayer)
 library(GenomicRanges)
@@ -60,7 +68,7 @@ for (i in 1:length(Peaks)) {
         if(i!=j){
             DrawVenn <- function(Con, Exp){
                 print(paste("Peak file 1:", Con))
-                print(paste("Peak file 2:", Exp, sep="\n"))
+                print(paste("Peak file 2:", Exp))
                 Con.name                    <- sub(".peak", "", Con)
                 Exp.name                    <- sub(".peak", "", Exp)
                 gr1                         <- get(Con)
@@ -94,8 +102,10 @@ for (i in 1:length(Peaks)) {
                                    lwd=2,
                                    cex = 2,
                                    cat.cex = 2,
-                                   cat.pos=c(-7,7),
-                                        #cat.dist=rep(0.09,2),
+                                   #cat.pos=c(-7,7),
+                                   cat.pos = c(0, 180),
+                                   cat.dist=rep(0.09,2),
+                                   rotation.degree=90,
                                    alpha=c(0.6,0.6))                
                 dev.off()
             }
