@@ -172,7 +172,11 @@ if(assembly=="sacCer3"){
 
 
 if(Type=="Tss"){
-    model     <- promoters(gnModel, upstream=upStream, downstream=downStream)
+    if(upStream > 0 | downStream > 0){
+        model     <- promoters(gnModel, upstream=upStream, downstream=downStream)
+    }else{
+        model     <- promoters(gnModel, upstream=upStream, downstream=1)
+    }
 }else{
     if(upStream > 0 | downStream > 0){
         Tss   <- promoters(gnModel, upstream = upStream, downstream = 0 )
