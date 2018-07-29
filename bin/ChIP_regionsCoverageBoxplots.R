@@ -18,6 +18,7 @@ help <- function(){
     cat("--numCores    : number of cores to use                                         [default = 10 ]\n")
     cat("--outName     : prefix to your out file names (No .extention)                  [required]\n")
     cat("--cols        : need the same number as samples separated by comma             [default = rainbow]\n")
+    cat("--calcSum     : calculate the coverage sum rather than the average (0/1)       [default = 0]\n") 
     cat("\n")
     q()
 }
@@ -37,6 +38,13 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     Cores     <- sub( '--numCores=', '',args[grep('--numCores=',args)])
     outName   <- sub( '--outName=', '',args[grep('--outName=',args)])
     cols    <- sub( '--cols=', '',args[grep('--cols=',args)])
+    calcSum    <- sub( '--calcSum=', '',args[grep('--calcSum=',args)])
+}
+
+if (identical(calcSum,character(0))){
+   calcSum <- 0
+}else{
+    calcSum <- as.numeric(calcSum)
 }
 
 outName
@@ -49,16 +57,6 @@ if (! identical(bwPattern,character(0))){
     bws <- bws[grep(bwPattern,bws,invert=FALSE)]
 }
 bws
-
-#setwd("/projects/b1025/arw/analysis/yohhei/quiescent/")
-#regions  <- "data_chipseq/Rpb3_3xFLAG_8WG16_120h_Qui_rep1_macsPeaks.bed"
-#assembly <- "sacCer3"
-#Window   <- 0
-#Bins     <- 25
-#Type     <- "Peaks"
-#bwFiles <- "data_chipseq/"
-#Cores <- 10
-#outName <-"debug"
     
 if (identical(Cores,character(0))){
    Cores <- 10
@@ -155,6 +153,7 @@ if( Type=="Tss" ){
     }    
     Model.win$name <- Model.win$gene_id
     fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    idx <- GenomicRanges:::get_out_of_bound_index(Model.win)
     if(length(idx) > 0){
         print(paste("remove out of bounds", idx))
         Model.win <- Model.win[-idx]
@@ -171,6 +170,7 @@ if( Type=="Tss" ){
     }
     Model.win$name <- Model.win$gene_id
     fname <- sub("$", paste0("_", Type, "up", upStream, "down", downStream, ".rda"), outName)
+    idx <- GenomicRanges:::get_out_of_bound_index(Model.win)
     if(length(idx) > 0){
         print(paste("remove out of bounds", idx))
         Model.win <- Model.win[-idx]
@@ -206,14 +206,25 @@ Bin <- function(bw,model){
     bw.peak <- import.bw(bw,RangedData=FALSE,selection = BigWigSelection(model))
     cat("calc coverage\n")
     bw.peak.cov <- coverage(bw.peak,weight='score')
-    cat("get coverage for peak region\n")
-    mean.cov <- with(as.data.frame(model),{
-        mcmapply(function(seqname,start,end){
-            mean(bw.peak.cov[[seqname]][start:end])
-        }
-       ,mc.cores=Cores
-       ,as.character(seqnames),start,end)
-    })
+    if (calcSum == 0 ){
+        print("average coverage")
+        mean.cov <- with(as.data.frame(model),{
+            mcmapply(function(seqname,start,end){
+                mean(bw.peak.cov[[seqname]][start:end])
+            }
+           ,mc.cores=Cores
+           ,as.character(seqnames),start,end)
+        })
+    }else{
+        print("sum coverage")
+        mean.cov <- with(as.data.frame(model),{
+            mcmapply(function(seqname,start,end){
+                sum(bw.peak.cov[[seqname]][start:end])
+            }
+           ,mc.cores=Cores
+           ,as.character(seqnames),start,end)
+        })
+    }
     mean.cov <- data.frame(mean.cov)
     rownames(mean.cov) <- model$gene_id
     colnames(mean.cov) <- sub(".bw", "", basename(bw))
@@ -228,11 +239,18 @@ colnames(avgCov) <- sub("$", paste0("_", Type), colnames(avgCov))
 df <- cbind(as.data.frame(Model.win), signif(avgCov, 4))
 
 ## save the gnModel as a granges object and a tab delimited file
+if (calcSum == 0 ){
+    fname <- paste(outName, Type, "AverageCoverages.txt", sep=".")
+     yLab <- "log2( Coverage Average )"
+}else{
+    fname <- paste(outName, Type, "TotalCoverages.txt", sep=".")
+     yLab <- "log2( Coverage Sum )"
+}
+
 write.table(df
-           ,file=paste(outName, Type, "AverageCoverages.txt", sep=".")
+           ,file=fname
            ,sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE
             )
-
 
 ###############################
 ## make boxplot
@@ -262,21 +280,22 @@ if (identical(cols,character(0))){
 #}
 #))
 
-minMax <- apply(avgCov, 2, function(x)boxplot.stats(x)$stats[c(1, 5)])
+minMax <- apply(log2(avgCov), 2, function(x)boxplot.stats(x)$stats[c(1, 5)])
 
-Ymin <- floor(log2(min(minMax[1,])))
-Ymax <- ceiling(log2(max(minMax[2,])))
+Ymin <- floor(min(minMax[1,]))
+Ymax <- ceiling(max(minMax[2,]))
 
-pdf(file=sub("$", paste0(Type, ".boxPlot.pdf"), outName),width=6,height=5)
+
+pdf(file=sub("txt", ".boxPlot.pdf", fname),width=6,height=5)
 print({
     p <-
-        ggplot(df.long, aes(x=variable, y=log2(value), fill=variable)) + 
+    ggplot(df.long, aes(x=variable, y=log2(value), fill=variable)) + 
         stat_boxplot(geom ='errorbar')+
         geom_boxplot(notch=TRUE,outlier.colour=NA) +
         theme_classic() +
         scale_fill_manual("sample", values=Cols)+
         coord_cartesian(ylim = c(Ymin, Ymax)) +
-        ylab("log2( Average Coverage ) ") + 
+        ylab(yLab) + 
         xlab("") +
         ggtitle(Type) +
         theme(text = element_text(size=8),
