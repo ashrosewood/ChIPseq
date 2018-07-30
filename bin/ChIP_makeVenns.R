@@ -35,8 +35,8 @@ if (identical(colA,character(0))){
 
 
 if(!(file.exists( outDir ))) {
-    print(paste("mkdir", dirname(outName)))
-    dir.create(dirname(outName),FALSE,TRUE)  
+    print(paste("mkdir", outDir))
+    dir.create(outDir,FALSE,TRUE)  
 }
 
 library(rtracklayer)
@@ -50,7 +50,7 @@ peaks
 
 for (i in 1:length(peaks))
 {
-    oname = gsub(".macsPeaks.bed|peaks.bed",".peak",basename(peaks[i]))
+    oname = gsub(".macsPeaks.bed|.peaks.bed",".peak",basename(peaks[i]))
     oname <- gsub("-","_",oname)
     Peak  <- import.bed(peaks[i])
     assign(oname, Peak)
@@ -59,9 +59,6 @@ for (i in 1:length(peaks))
 Peaks <- ls(pattern=".peak$")
 print(Peaks)
 
-if(!(file.exists( outDir ))) {
-    dir.create(outDir,FALSE,TRUE)  
-}
 
 for (i in 1:length(Peaks)) {
     for (j in 1:length(Peaks)){        
@@ -97,13 +94,13 @@ for (i in 1:length(Peaks)) {
                 pdf(paste(outDir, paste0(paste(Con, "vs", Exp, "peakOverlap", sep="_"), ".pdf"), sep="/"),width=5,height=5)
                 draw.pairwise.venn(area1=a1,area2=a2,cross.area=a12,
                                    category = c(Con.name, Exp.name),
-                                   fill = c("red", "blue"),
+                                   fill = c(colA, colB),
                                    lty = "solid",#"blank",
                                    lwd=2,
                                    cex = 2,
                                    cat.cex = 2,
                                    #cat.pos=c(-7,7),
-                                   cat.pos = c(0, 180),
+                                   cat.pos = c(180, 0),
                                    cat.dist=rep(0.09,2),
                                    rotation.degree=90,
                                    alpha=c(0.6,0.6))                
