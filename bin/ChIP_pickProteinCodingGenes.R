@@ -1,14 +1,13 @@
 args <- commandArgs()
 
 help <- function(){
-    cat("pickBestTSSfromTxdbandBW.withStrandMultiSections.R :
+    cat("ChIP_pickProteinCodingGenes.R :
 - This script generates a filtered gene list from a Txdb based on ChIP-seq in the tss region and filters for ensembl protein coding
   genes that are also refseq validated.
 - It first filters for the best transcript with the highest coverage in the defined transcript tss region (from the tss to + txTssDown )
-     I recommend not taking anything upstream as this could be from an alternate transcript.
 - If a peakFile is provided, then take the transcripts only overlapping peaks.
-- Filter for a minimal gene length.
-- Filter for a minimal distance to the nearest gene after selecting the best transcript.
+- Option to filter for a minimal gene length.
+- Option to filter for a minimal distance to the nearest gene after selecting the best transcript.
 - Require a max rpm in the tss region of at least 1.
 - This script is set up for ChIP-seq and does not take the stranded coverage into account\n")
     cat("Usage: \n")
@@ -108,50 +107,28 @@ library(biomaRt)
 
 if (assembly == "hg19") {
     organism <- Hsapiens
-    ## this is for enseble version 75
     annoFile <- "/projects/b1025/anno/biomaRt/hg19.Ens_75.biomaRt.geneAnno.Rdata"
-    if(!(file.exists(annoFile))) {  
-        bm <- useEnsembl(biomart="ensembl", dataset="hsapiens_gene_ensembl", GRCh=37)
-        anno <- getBM(mart=bm, attributes=c('ensembl_gene_id'
-                                           ,'ensembl_transcript_id'
-                                           ,'external_gene_name'
-                                           ,'gene_biotype'
-                                           ,'transcript_biotype'
-                                           ,'refseq_mrna'
-                                           ,'refseq_ncrna'
-                                           ,'entrezgene'
-                                           ,'description'))
-        anno[anno$refseq_mrna=="",  "refseq_mrna"] <- NA
-        anno[anno$refseq_ncrna=="", "refseq_ncrna"] <- NA
-        save(anno, file=annoFile)
-    }else{
-        anno <- get(load(annoFile))
-    }
+    anno     <- get(load(annoFile))
 }
 if (assembly == "mm9") {
     organism <- Mmusculus
+    annoFile <- "/projects/b1025/anno/biomaRt/mm9.Ens_67.biomaRt.geneAnno.Rdata"
+    anno     <- get(load(annoFile))    
 }
 if (assembly == "mm10") {
     organism <- Mmusculus
+    annoFile <- "/projects/b1025/anno/biomaRt/mm10.Ens_78.biomaRt.geneAnno.Rdata"
+    anno     <- get(load(annoFile))    
 }
 if (assembly == "sacCer3") {
     organism <- Scerevisiae
     annoFile <- "/projects/b1025/anno/biomaRt/sacSer3.Ens_78.biomaRt.geneAnno.Rdata"
-    if(!(file.exists(annoFile))) {
-        bm <- useEnsembl(biomart="ensembl", dataset="scerevisiae_gene_ensembl", host="dec2014.archive.ensembl.org")        
-        anno <- getBM(mart=bm, attributes=c('ensembl_gene_id'
-                                       ,'ensembl_transcript_id'
-                                       ,'external_gene_name'
-                                       ,'gene_biotype'
-                                       ,'transcript_biotype'
-                                       ,'description'))
-        save(anno, file=annoFile)
-    }else{
-        anno <- get(load(annoFile))
-    }
+    anno     <- get(load(annoFile))
 }
 if (assembly == "dm3") {
     organism <- Dmelanogaster
+    annoFile <- "/projects/b1025/anno/biomaRt/dm3.Ens_74.biomaRt.geneAnno.Rdata"
+    anno     <- get(load(annoFile))
 }
 
 ##############
