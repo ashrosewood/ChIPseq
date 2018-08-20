@@ -29,7 +29,7 @@ if (identical(colA,character(0))){
     colA <- "red"
 }
 
-if (identical(colA,character(0))){
+if (identical(colB,character(0))){
     colB <- "blue"
 }
 
