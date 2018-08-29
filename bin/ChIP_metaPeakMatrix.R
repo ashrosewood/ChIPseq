@@ -31,8 +31,9 @@ if(length(args)==0 || !is.na(charmatch("-help",args))){
     upStream   <- sub( '--upStream=', '', args[grep('--upStream=', args)] )
     downStream <- sub( '--downStream=', '', args[grep('--downStream=', args)] )
     approxLen  <- sub( '--approxLen=', '', args[grep('--approxLen=', args)] )
-    Cores     <- sub( '--numCores=', '',args[grep('--numCores=',args)])
-    outName   <- sub( '--outName=', '',args[grep('--outName=',args)])
+    Cores      <- sub( '--numCores=', '',args[grep('--numCores=',args)])
+    outName    <- sub( '--outName=', '',args[grep('--outName=',args)])
+    Bins       <- sub( '--Bins=', '',args[grep('--Bins=',args)])
 
 }
 
@@ -47,12 +48,14 @@ if (identical(Bins,character(0))){
 }else{
     Bins      <- as.numeric(Bins)
 }
+print(c("Bins:", Bins))
 
 if (identical(approxLen,character(0))){
    approxLen <- 10000
 }else{
    approxLen <- as.numeric(approxLen)
 }
+print(c("approxLen:", approxLen))
 
 if (identical(upStream,character(0))){
    upStream <- 2000
@@ -141,8 +144,8 @@ head(ranges(TSS))
 head(ranges(Body))
 head(ranges(TES))
 
-fname <- sub("$", ".metaPeak.rda", outName)
- 
+fname          <- sub("$", paste0("_metaPeak", "up", upStream, "down", downStream, ".rda"), outName)
+
 Bin <- function(bw,model,Size){
     cat("importing:", bw, sep="\n")
     bw.peak <- import.bw(bw,RangedData=FALSE,selection = BigWigSelection(model))
